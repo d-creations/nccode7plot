@@ -104,6 +104,17 @@ class VariableHandler(Handler):
                                 new_v = str(expr_val)
                         else:
                             new_v = self._evaluator.eval_and_replace_in_string(val_str, state)
+                            try:
+                                # After replacing brackets, check if the remaining string is a valid math expression 
+                                # (e.g. "#10/2" resulting from "#10/[#5-2]"). By evaluating the whole remaining string,
+                                # we allow unbracketed expressions to resolve fully.
+                                final_val = self._evaluator.evaluate(new_v, state)
+                                if float(final_val).is_integer():
+                                    new_v = str(int(final_val))
+                                else:
+                                    new_v = str(final_val)
+                            except Exception:
+                                pass
                     except Exception:
                         new_v = val_str
                 new_params[k] = new_v

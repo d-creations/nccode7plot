@@ -75,7 +75,13 @@ class BaseStatefulCanal(BaseNCCanalInterface):
                 pass
 
         node = self._nodes[0] if len(self._nodes) > 0 else None
-        max_steps = max(10000, len(self._nodes) * 100)
+        
+        config_max = getattr(self._state.machine_config, "max_execution_nodes", 0) if getattr(self._state, "machine_config", None) else 0
+        if config_max > 0:
+            max_steps = config_max
+        else:
+            max_steps = max(100000, len(self._nodes) * 100)
+            
         steps = 0
         logger = logging.getLogger(__name__)
 
@@ -226,6 +232,7 @@ HANDLER_REGISTRY = {
     "fanuc_mill_feed_mode": ("ncplot7py.domain.handlers.fanuc_mill_cnc.gcode_group5_feed_mode", "FanucMillGroup5FeedModeHandler"),
     "fanuc_mill_speed_mode": ("ncplot7py.domain.handlers.fanuc_mill_cnc.gcode_speed_mode", "FanucMillSpeedModeHandler"),
     "fanuc_mill_work_offset": ("ncplot7py.domain.handlers.fanuc_mill_cnc.gcode_work_offset", "FanucMillWorkOffsetHandler"),
+    "fanuc_mill_plane": ("ncplot7py.domain.handlers.fanuc_mill_cnc.gcode_group2_plane", "FanucMillGroup2PlaneHandler"),
     
     # Turn Mill Star
     "star_turn": ("ncplot7py.domain.handlers.star_machine.star_turn_handler", "StarTurnHandler"),
@@ -235,6 +242,7 @@ HANDLER_REGISTRY = {
     "siemens_named_cycles": ("ncplot7py.domain.handlers.siemens_mill_cnc.cycles_handler", "SiemensNamedCyclesHandler"),
     "siemens_iso_cycles": ("ncplot7py.domain.handlers.siemens_mill_cnc.cycles_handler", "SiemensISOCyclesHandler"),
     "siemens_iso_feed": ("ncplot7py.domain.handlers.siemens_mill_cnc.feed_handler", "SiemensISOFeedHandler"),
+    "siemens_plane": ("ncplot7py.domain.handlers.siemens_mill_cnc.gcode_group6_plane", "SiemensGroup6PlaneHandler"),
     "siemens_iso_polar": ("ncplot7py.domain.handlers.siemens_mill_cnc.polar_handler", "SiemensISOPolarHandler"),
     "siemens_iso_tool_length": ("ncplot7py.domain.handlers.siemens_mill_cnc.tool_length_handler", "SiemensISOToolLengthHandler"),
     "siemens_iso_cutter_comp": ("ncplot7py.domain.handlers.siemens_mill_cnc.cutter_comp_handler", "SiemensISOCutterCompHandler"),

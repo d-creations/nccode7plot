@@ -71,7 +71,7 @@ class TestNCCommandParser(unittest.TestCase):
         node2 = self.parser.parse("T1 ; Fraeser Referenz=SPITZE")
         self.assertEqual(node2.command_parameter.get("T"), "1")
         self.assertNotIn("F", node2.command_parameter)
-        self.assertEqual(node.variable_command, "#501=0.2")
+        self.assertEqual(node2.variable_command, None)
 
 if __name__ == "__main__":
     unittest.main()

@@ -26,6 +26,7 @@ class MachineConfig:
     c_axis_shortest_path: bool = False
     polar_interpolate_axis: str = "Y"
     diameter_axes: Tuple[str, ...] = ()
+    max_execution_nodes: int = 100000
 
 
 FANUC_GENERIC_CONFIG = MachineConfig(
@@ -74,7 +75,8 @@ def load_machine_configs():
                     b_axis_shortest_path=val.get('b_axis_shortest_path', False),
                     c_axis_shortest_path=val.get('c_axis_shortest_path', False),
                     polar_interpolate_axis=val.get('polar_interpolate_axis', 'Y'),
-                    diameter_axes=tuple(val.get('diameter_axes', []))
+                    diameter_axes=tuple(val.get('diameter_axes', [])),
+                    max_execution_nodes=val.get('max_execution_nodes', 100000)
                 )
                 
         # Second pass: resolve aliases
