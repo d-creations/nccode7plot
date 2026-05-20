@@ -65,9 +65,7 @@ class VariableHandler(Handler):
                         try:
                             # allow right side to be an expression (possibly bracketed)
                             expr = right.strip()
-                            # if expression is wrapped in [] remove them
-                            if expr.startswith("[") and expr.endswith("]"):
-                                expr = expr[1:-1]
+                            # no need to strip [ ] manually, evaluate handles it
                             val = self._evaluator.evaluate(expr, state)
                             state.parameters[var_index] = float(val)
                         except Exception as e:
