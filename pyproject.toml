@@ -27,7 +27,6 @@ plotting = ["matplotlib>=3.0,<4.0"]
 
 [tool.hatch.build]
 packages = { find = { where = ["src"], include = ["ncplot7py*"] } }
-targets = { wheel = {}, sdist = {} }
 
 [tool.hatch.build.targets.wheel]
 packages = ["ncplot7py"]
