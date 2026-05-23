@@ -2,6 +2,7 @@ from typing import Dict, Any, List, Tuple, Optional
 from dataclasses import dataclass, field
 import json
 import os
+from importlib.resources import files
 
 @dataclass
 class MachineConfig:
@@ -46,12 +47,16 @@ def load_machine_configs():
     global MACHINE_CONFIGS
     MACHINE_CONFIGS = {'FANUC_GENERIC': FANUC_GENERIC_CONFIG}
     try:
-        package_config_path = os.path.join(os.path.dirname(__file__), '..', 'config', 'machines.json')
-        legacy_config_path = os.path.join(os.path.dirname(__file__), '..', '..', '..', 'config', 'machines.json')
-        config_path = package_config_path if os.path.exists(package_config_path) else legacy_config_path
-        with open(config_path, 'r', encoding='utf-8') as f:
-            data = json.load(f)
-            
+        try:
+            config_text = files('ncplot7py').joinpath('config', 'machines.json').read_text(encoding='utf-8')
+            data = json.loads(config_text)
+        except (FileNotFoundError, ModuleNotFoundError, OSError):
+            package_config_path = os.path.join(os.path.dirname(__file__), '..', 'config', 'machines.json')
+            legacy_config_path = os.path.join(os.path.dirname(__file__), '..', '..', '..', 'config', 'machines.json')
+            config_path = package_config_path if os.path.exists(package_config_path) else legacy_config_path
+            with open(config_path, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+
         # First pass: load base configs
         for key, val in data.items():
             if isinstance(val, dict):

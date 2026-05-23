@@ -26,15 +26,17 @@ plotting = ["matplotlib>=3.0,<4.0"]
 
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/ncplot7py"]
+packages = ["ncplot7py"]
  
 [tool.hatch.build.targets.wheel.force-include]
-"config/machines.json" = "ncplot7py/config/machines.json"
+"src/ncplot7py/config/machines.json" = "ncplot7py/config/machines.json"
+ 
+[tool.hatch.build.packages.find]
+where = ["src"]
  
 [tool.hatch.build.targets.sdist]
 include = [
   "/src/ncplot7py",
-  "/config/machines.json",
   "/README.md",
   "/LICENSE",
   "/tests",
