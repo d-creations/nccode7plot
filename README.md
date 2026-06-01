@@ -44,7 +44,8 @@ The `cgiserver.cgi` script is a Python CGI script that:
       "canalNr": "channel-1",
       "customMachineConfig": {
         "control_type": "SIEMENS",
-        "variable_prefix": "R"
+        "variable_prefix": "R",
+        "cycle_start_code": "START:"
       }
     }
   ]
@@ -84,9 +85,9 @@ The `cgiserver.cgi` script is a Python CGI script that:
 The default available machine configurations are defined in `ncplot7py/config/machines.json` and currently include:
 - `SIEMENS_840D` - Siemens standard control
 - `FANUC_MILL` - FANUC milling machine
-- `FANUC_STAR` - FANUC basic lathe/Swiss
-- `FANUC_STAR_SR20` - FANUC for Star SR20 series
-- `FANUC_GENERIC` - Generic FANUC (default fallback)
+- `FANUC_TURN` - FANUC turning machine
+- `FANUC_STAR_x-D_y-R_z_R` - FANUC basic lathe/Swiss
+- `FANUC_STAR_x-D_y-D_z_R` - FANUC for advanced Swiss
 
 ## Deployment
 

@@ -30,9 +30,9 @@ Each machine-data entry must include `program`, `machineName`, and `canalNr`. An
 
 ## Allowed machine names
 These are defined dynamically in `ncplot7py/config/machines.json`. Common defaults include:
-- FANUC_STAR
-- FANUC_STAR_SR20
-- FANUC_GENERIC
+- FANUC_STAR_x-D_y-R_z_R
+- FANUC_STAR_x-D_y-D_z_R
+- FANUC_TURN
 - FANUC_MILL
 - SIEMENS_840D
 
@@ -43,6 +43,7 @@ Instead of relying strictly on server-defined defaults, clients can dynamically 
 - `variable_pattern` (str, e.g. `"#(\\d+)"`)
 - `variable_prefix` (str, e.g. `"#"` or `"R"`)
 - `tool_range` (list: `[min, max]`)
+- `cycle_start_code` (str, e.g. `"M20"` or `"START:"`)
 - `default_plane` (str)
 - `default_feed_mode` (str)
 

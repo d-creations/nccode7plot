@@ -27,6 +27,7 @@
       0,
       99
     ],
+    "cycle_start_code" : "M20",
     "default_plane": "G18",
     "default_feed_mode": "FEED_PER_REV",
     "rapid_feed_rate": 20000.0,
@@ -115,6 +116,7 @@
       0,
       99
     ],
+    "cycle_start_code" : "M20",
     "default_plane": "G18",
     "default_feed_mode": "FEED_PER_REV",
     "rapid_feed_rate": 20000.0,
@@ -202,6 +204,7 @@
       0,
       9999
     ],
+    "cycle_start_code" : "M20",
     "default_plane": "G18",
     "default_feed_mode": "FEED_PER_MIN",
     "rapid_feed_rate": 20000.0,
@@ -288,6 +291,7 @@
       0,
       9999
     ],
+    "cycle_start_code" : "M20",
     "default_plane": "G17",
     "default_feed_mode": "FEED_PER_MIN",
     "rapid_feed_rate": 20000.0,
@@ -375,6 +379,7 @@
       0,
       9999
     ],
+    "cycle_start_code" : "START:",
     "default_plane": "G17",
     "default_feed_mode": "FEED_PER_MIN",
     "rapid_feed_rate": 20000.0,
