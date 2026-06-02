@@ -33,10 +33,10 @@ class CycleEnd(Handler):
 
         # Also fallback to check loop_command or variable_command if it wasn't parsed into dict
         if not is_cycle_start:
-            if node.variable_command and cycle_start_code in str(node.variable_command).upper():
-                is_cycle_start = True
-            elif node.loop_command and cycle_start_code in str(node.loop_command).upper():
-                is_cycle_start = True
+            is_cycle_start = bool(
+                (node.variable_command and cycle_start_code in str(node.variable_command).upper()) or
+                (node.loop_command and cycle_start_code in str(node.loop_command).upper())
+            )
 
         if is_cycle_start:
             count = state.extra.get("cycle_start_count", 0)

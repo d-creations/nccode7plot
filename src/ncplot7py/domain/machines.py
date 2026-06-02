@@ -16,6 +16,7 @@ class MachineConfig:
     channels: int = 1
     synchronization_strategy: str = "NONE"
     supported_gcode_groups: Tuple[str, ...] = field(default_factory=tuple)
+    cycle_start_code: str = ""
     default_plane: str = "G17"
     default_feed_mode: str = "FEED_PER_MIN"
     rapid_feed_rate: Optional[float] = None
@@ -70,6 +71,7 @@ def load_machine_configs():
                     channels=val.get('channels', 1),
                     synchronization_strategy=val.get('synchronization_strategy', 'NONE'),
                     supported_gcode_groups=tuple(val.get('supported_gcode_groups', [])),
+                    cycle_start_code=val.get('cycle_start_code', ''),
                     default_plane=val.get('default_plane', 'G17'),
                     default_feed_mode=val.get('default_feed_mode', 'FEED_PER_MIN'),
                     rapid_feed_rate=val.get('rapid_feed_rate'),

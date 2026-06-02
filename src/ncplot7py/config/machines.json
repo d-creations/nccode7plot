@@ -19,6 +19,7 @@
       "cornering",
       "wait_code",
       "spindle_speed",
+      "cycle_end",
       "motion"
     ],
     "variable_pattern": "#(\\d+)",
@@ -27,7 +28,7 @@
       0,
       99
     ],
-    "cycle_start_code" : "M20",
+    "cycle_start_code": "M20",
     "default_plane": "G18",
     "default_feed_mode": "FEED_PER_REV",
     "rapid_feed_rate": 20000.0,
@@ -86,7 +87,7 @@
         "regex": "([A-Z])(\\s*[+-]?\\d+(?:\\.\\d+)?)"
       }
     ],
-    "max_execution_nodes": 100000
+    "max_execution_nodes": 50000
   },
   "FANUC_STAR_x-D_y-D_z_R": {
     "name": "FANUC_STAR_x-D_y-D_z_R",
@@ -108,6 +109,7 @@
       "cornering",
       "wait_code",
       "spindle_speed",
+      "cycle_end",
       "motion"
     ],
     "variable_pattern": "#(\\d+)",
@@ -116,7 +118,7 @@
       0,
       99
     ],
-    "cycle_start_code" : "M20",
+    "cycle_start_code": "M20",
     "default_plane": "G18",
     "default_feed_mode": "FEED_PER_REV",
     "rapid_feed_rate": 20000.0,
@@ -176,7 +178,7 @@
         "regex": "([A-Z])(\\s*[+-]?\\d+(?:\\.\\d+)?)"
       }
     ],
-    "max_execution_nodes": 100000
+    "max_execution_nodes": 50000
   },
   "FANUC_TURN": {
     "name": "FANUC_TURN",
@@ -196,6 +198,7 @@
       "group_2_speed_mode",
       "group_5_feed_mode",
       "cornering",
+      "cycle_end",
       "motion"
     ],
     "variable_pattern": "#(\\d+)",
@@ -204,7 +207,7 @@
       0,
       9999
     ],
-    "cycle_start_code" : "M20",
+    "cycle_start_code": "M20",
     "default_plane": "G18",
     "default_feed_mode": "FEED_PER_MIN",
     "rapid_feed_rate": 20000.0,
@@ -263,7 +266,7 @@
         "regex": "([A-Z])(\\s*[+-]?\\d+(?:\\.\\d+)?)"
       }
     ],
-    "max_execution_nodes": 100000
+    "max_execution_nodes": 50000
   },
   "FANUC_MILL": {
     "name": "FANUC_MILL",
@@ -283,6 +286,7 @@
       "fanuc_mill_feed_mode",
       "fanuc_mill_speed_mode",
       "fanuc_mill_plane",
+      "cycle_end",
       "motion"
     ],
     "variable_pattern": "#(\\d+)",
@@ -291,7 +295,7 @@
       0,
       9999
     ],
-    "cycle_start_code" : "M20",
+    "cycle_start_code": "M20",
     "default_plane": "G17",
     "default_feed_mode": "FEED_PER_MIN",
     "rapid_feed_rate": 20000.0,
@@ -348,7 +352,7 @@
         "regex": "([A-Z])(\\s*[+-]?\\d+(?:\\.\\d+)?)"
       }
     ],
-    "max_execution_nodes": 100000
+    "max_execution_nodes": 50000
   },
   "SIEMENS_840D": {
     "name": "SIEMENS_840D",
@@ -371,6 +375,7 @@
       "siemens_iso_coordinate",
       "siemens_iso_inch_metric",
       "siemens_iso_misc",
+      "cycle_end",
       "motion"
     ],
     "variable_pattern": "R(\\d+)",
@@ -379,7 +384,7 @@
       0,
       9999
     ],
-    "cycle_start_code" : "START:",
+    "cycle_start_code": "START:",
     "default_plane": "G17",
     "default_feed_mode": "FEED_PER_MIN",
     "rapid_feed_rate": 20000.0,
@@ -440,6 +445,6 @@
         "regex": "([A-Z])(\\s*[+-]?\\d+(?:\\.\\d+)?)"
       }
     ],
-    "max_execution_nodes": 100000
+    "max_execution_nodes": 50000
   }
 }

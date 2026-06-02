@@ -88,6 +88,11 @@ class NCCommandStringParser(BaseNCCommandParser):
         siemens_var_pattern = r"\$[A-Za-z0-9_]+(?:\[[^\]]*\])?"
         nc_line = re.sub(siemens_var_pattern, mask_match, nc_line, flags=re.IGNORECASE)
 
+        # Mask simple labels such as START: so token splitting does not break them
+        # into S/T/A/R/T fragments that later trigger duplicate-parameter errors.
+        label_pattern = r"\b[A-Za-z_][A-Za-z0-9_]*:"
+        nc_line = re.sub(label_pattern, mask_match, nc_line, flags=re.IGNORECASE)
+
         # If we have masked strings inside the parens, the regex `[^)]*` is fine because `)` inside a string is now hidden in `__masked_X__`.
         # BUT, if the mask token itself contains `)` (it shouldn't, it's `__masked_N__`), we are good.
         

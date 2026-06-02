@@ -216,6 +216,7 @@ HANDLER_REGISTRY = {
     "spindle_speed": ("ncplot7py.domain.handlers.modal", "ModalHandler"),
     "wait_code": ("ncplot7py.domain.handlers.modal", "ModalHandler"),
     "tool_handler": ("ncplot7py.domain.handlers.tool_handler", "ToolHandler"),
+    "cycle_end": ("ncplot7py.domain.handlers.cycle_end", "CycleEnd"),
     
     # Generic & Fanuc
     "group_0_coordinate_set": ("ncplot7py.domain.handlers.fanuc_turn_cnc.gcode_group0_coordinate_set", "GCodeGroup0CoordinateSetExecChainLink"),
