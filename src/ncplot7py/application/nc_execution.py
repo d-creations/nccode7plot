@@ -144,6 +144,36 @@ class NCExecutionEngine:
                 continue
         return variables
 
+    def _get_canal_named_variables(self, canal_index: int) -> Dict[str, Any]:
+        state = self._get_canal_state(canal_index)
+        if state is None:
+            return {}
+
+        extra = getattr(state, "extra", None)
+        if not isinstance(extra, dict):
+            return {}
+        siemens = extra.get("siemens")
+        if not isinstance(siemens, dict):
+            return {}
+
+        named_variables: Dict[str, Any] = {}
+        symbols = siemens.get("symbols", {})
+        if isinstance(symbols, dict):
+            for key, value in symbols.items():
+                if isinstance(value, (int, float, bool, str)):
+                    named_variables[str(key)] = value
+
+        arrays = siemens.get("arrays", {})
+        if isinstance(arrays, dict):
+            for name, values in arrays.items():
+                if not isinstance(values, (list, tuple)):
+                    continue
+                for index, value in enumerate(values):
+                    if isinstance(value, (int, float, bool, str)):
+                        named_variables[f"{name}[{index}]"] = value
+
+        return named_variables
+
     def _ensure_parser(self):
         # Ensure a parser is registered (same strategy as cli.bootstrap)
         if registry.get("parser", "nc_command") is None:
@@ -359,6 +389,7 @@ class NCExecutionEngine:
                 "canalNr": self.cnc_control.get_canal_name(canal_index),
                 "programExec": linesExec,
                 "variables": self._get_canal_variables(canal_index),
+                "namedVariables": self._get_canal_named_variables(canal_index),
             }
             canal_index += 1
             lines_list.append(canal)

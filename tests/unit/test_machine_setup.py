@@ -122,6 +122,9 @@ class TestMachineSetup(unittest.TestCase):
 
         self.assertIn("TRAORI", by_token["keyword.control.siemens"])
         self.assertIn("SETAL", by_token["keyword.control.siemens"])
+        self.assertNotRegex("G53", by_token["keyword.control.siemens"])
+        self.assertNotIn("STOPRE", by_token["keyword.control.siemens"])
+        self.assertNotIn("RET", by_token["keyword.control.siemens"])
         self.assertIn("GOTOF", by_token["keyword.control"])
         self.assertIn("ATAN2", by_token["support.function"])
         self.assertIn("variable.other.system.siemens", by_token)

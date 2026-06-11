@@ -30,6 +30,8 @@ class TestCgiServerConversion(unittest.TestCase):
         result = cgiserver.build_segments_from_engine_output(
             {
                 "programExec": [1, 2, 10],
+                "variables": {"1": 4.7},
+                "namedVariables": {"ANGLE_Z": 36.5, "CUSTOM_MC[0]": 12.0},
                 "plot": [
                     {
                         "x": [0.0, 1.0],
@@ -45,8 +47,28 @@ class TestCgiServerConversion(unittest.TestCase):
         self.assertEqual(result["segments"][0]["lineNumber"], 10)
         self.assertEqual(result["executedLines"], [10])
         self.assertEqual(result["executedNodeLines"], [1, 2, 10])
+        self.assertEqual(result["variables"], {"1": 4.7})
+        self.assertEqual(result["namedVariables"], {"ANGLE_Z": 36.5, "CUSTOM_MC[0]": 12.0})
         self.assertEqual(result["timing"], [2.5])
         self.assertEqual(result["lineTiming"], {"10": 2.5})
+
+    def test_variable_only_siemens_program_does_not_fall_back_to_mock(self):
+        cgiserver = _load_cgiserver_module()
+
+        result = cgiserver.handle_execute_programs(
+            [
+                {
+                    "program": "DEF REAL CUSTOM_MC[4]\nCUSTOM_MC[3]=12.5\nANGLE_Z=ATAN2(30,40)",
+                    "machineName": "SIEMENS_840D",
+                    "canalNr": "1",
+                }
+            ]
+        )
+
+        canal = result["canal"]["1"]
+        self.assertEqual(canal["segments"], [])
+        self.assertAlmostEqual(canal["namedVariables"]["CUSTOM_MC[3]"], 12.5)
+        self.assertAlmostEqual(canal["namedVariables"]["ANGLE_Z"], 36.869897, places=5)
 
 
 if __name__ == "__main__":

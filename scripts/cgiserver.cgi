@@ -153,7 +153,8 @@ def build_segments_from_engine_output(canal_output: Dict[str, Any]) -> Dict[str,
         "segments": segments,
         "executedLines": motion_line_numbers,
         "executedNodeLines": executed_node_lines,
-        "variables": {},
+        "variables": canal_output.get("variables", {}) if isinstance(canal_output.get("variables", {}), dict) else {},
+        "namedVariables": canal_output.get("namedVariables", {}) if isinstance(canal_output.get("namedVariables", {}), dict) else {},
         "timing": timing,
         "lineTiming": line_timing,
     }
@@ -209,8 +210,27 @@ def mock_parse_nc_program(program: str, machine_name: str) -> Dict[str, Any]:
         "segments": segments,
         "executedLines": list(range(1, len(lines) + 1)),
         "variables": {},
+        "namedVariables": {},
         "timing": [0.1] * len(lines)
     }
+
+def engine_output_has_non_plot_data(engine_output: Any) -> bool:
+    """Return True when the real engine produced useful non-geometry data."""
+    if not isinstance(engine_output, list):
+        return False
+
+    for canal in engine_output:
+        if not isinstance(canal, dict):
+            continue
+        if canal.get("programExec"):
+            return True
+        variables = canal.get("variables")
+        if isinstance(variables, dict) and variables:
+            return True
+        named_variables = canal.get("namedVariables")
+        if isinstance(named_variables, dict) and named_variables:
+            return True
+    return False
 
 def run_mock_parser(machinedata: List[Dict[str, Any]]) -> Dict[str, Any]:
     """Run the mock parser for all programs in machinedata."""
@@ -319,7 +339,8 @@ def handle_execute_programs(machinedata: List[Dict[str, Any]]) -> Dict[str, Any]
     init_states = []
     for idx in range(len(programs)):
         if CNCState is not None:
-            state = CNCState()
+            config = custom_configs[idx] if idx < len(custom_configs) and custom_configs[idx] is not None else get_machine_config(machine_names[idx])
+            state = CNCState(machine_config=config)
             # Set custom variables into state parameters
             custom_vars = custom_variables_list[idx] if idx < len(custom_variables_list) else []
             for var in custom_vars:
@@ -393,7 +414,7 @@ def handle_execute_programs(machinedata: List[Dict[str, Any]]) -> Dict[str, Any]
             elif isinstance(canal, list):
                 total_points += len(canal)
         
-        if total_points == 0 and any(len(p.strip()) > 0 for p in programs):
+        if total_points == 0 and any(len(p.strip()) > 0 for p in programs) and not engine_output_has_non_plot_data(engine_output):
             logging.info("Real engine returned 0 points for non-empty program. Falling back to mock.")
             use_mock = True
 

@@ -403,13 +403,6 @@
     "a_axis_shortest_path": false,
     "b_axis_shortest_path": false,
     "c_axis_shortest_path": false,
-    "rotary_axis_planes": {
-      "A": "YZ",
-      "B": "XZ",
-      "C": "XY"
-    },
-    "seventh_axis_name": "LA1",
-    "seventh_axis_maps_to": null,
     "polar_interpolate_axis": "Y",
     "diameter_axes": [],
     "syntax_rules": [
@@ -427,7 +420,7 @@
       },
       {
         "token": "keyword.control.siemens",
-        "regex": "(?:CYCLE|POCKET|HOLES|SLOT)\\d+|MCALL|M30|M17|RET|WORKPIECE|REPEAT|MSG|SETAL|STOPRE|NEWCONF|TRAORI|TRAFOOF|TRANS|ATRANS|ROT|AROT|CTRANS|CROT|SPOS"
+        "regex": "T=\"[^\"]+\"|(?:CYCLE|POCKET|HOLES|SLOT)\\d+|LONGHOLE|MCALL|M30|M17|MSG|SETAL|NEWCONF|TRAORI|TRAFOOF|TRANS|ATRANS|ROT|AROT|CTRANS|CROT|SPOS|G64|G5[4-9]"
       },
       {
         "token": "keyword.control",

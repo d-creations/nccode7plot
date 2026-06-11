@@ -1,167 +1,128 @@
-# NC-Edit7 CNC Macine Ploter
+# ncplot7py CNC Machine Simulator
 
-This is a CNC-Simulation to plot nc programs. You can define a CNC control and Execute the CNC Program and recive the points.  It can be used as a python  module or CGI Api interface.
+`ncplot7py` is a Python module for parsing and simulating NC/CNC programs. It executes programs against configurable CNC machine controls and returns plot-ready toolpath data, executed lines, variables, timing, and errors.
 
-## Server Endpoint
+The CGI script in `scripts/cgiserver.cgi` is only an adapter for frontends such as NC-Edit7. The core project is the Python simulation engine and machine-control model.
 
-This directory contains the CGI server script for handling plot requests from the NC-Edit7 frontend.
+## What It Does
 
-## Overview
+- Parses FANUC and Siemens-style NC programs.
+- Simulates CNC machine state through configurable controls.
+- Generates toolpath segments for plotting.
+- Tracks executed NC lines, runtime, variables, named Siemens symbols, and errors.
+- Supports single-channel and multi-channel machine configurations.
+- Exposes machine metadata and editor syntax patterns for frontend integrations.
 
-This i s a Modul that:
-- Lists available CNC machines
-- Processes NC programs and generates plot data
-- Returns execution results including toolpath segments, variables, and timing
+## Python Module Usage
 
-## API Endpoints
+The normal usage is to import the package and run NC code through a configured control and the execution engine.
 
-### List Machines
+```python
+from ncplot7py.application.nc_execution import NCExecutionEngine
+from ncplot7py.domain.cnc_state import CNCState
+from ncplot7py.domain.machines import get_machine_config
+from ncplot7py.infrastructure.machines.base_stateful_control import UniversalConfigDrivenControl
 
-**Request:**
+program = """
+G90 G54
+G0 X0 Y0 Z10
+G1 X50 Y0 F300
+M30
+"""
+
+state = CNCState(machine_config=get_machine_config("SIEMENS_840D"))
+control = UniversalConfigDrivenControl(init_nc_states=[state])
+engine = NCExecutionEngine(control)
+
+result = engine.get_Syncro_plot([program])
+errors = engine.errors
+runtime = engine.get_cacluated_runtime()
+```
+
+See the scripts in `scripts/` for runnable examples.
+
+## Machine Configuration
+
+The default machine configurations are defined in `src/ncplot7py/config/machines.json` and include:
+
+- `SIEMENS_840D` - Siemens milling control
+- `FANUC_MILL` - FANUC milling control
+- `FANUC_TURN` - FANUC turning control
+- `FANUC_STAR_x-D_y-R_z_R` - FANUC turn/mill Swiss-style control
+- `FANUC_STAR_x-D_y-D_z_R` - FANUC turn/mill Swiss-style control with X and Y diameter axes
+
+Machine configs define the control family, parser, channel count, supported handler groups, default modal state, axis behavior, syntax rules, and execution limits.
+
+## Frontend and CGI Adapter
+
+For compatibility with NC-Edit7 and other frontend clients, the repository includes `scripts/cgiserver.cgi`. It accepts JSON requests, calls the real Python simulation engine, and returns JSON plot data.
+
+The CGI adapter supports requests such as:
+
 ```json
 {
   "action": "list_machines"
 }
 ```
 
-**Response:**
-```json
-{
-  "machines": [
-    {"machineName": "SIEMENS_840D", "controlType": "SIEMENS"},
-    {"machineName": "FANUC_MILL", "controlType": "FANUC"},
-    ...
-  ],
-  "success": true
-}
-```
+and program execution requests such as:
 
-### Execute Programs
-
-**Request:**
 ```json
 {
   "machinedata": [
     {
       "program": "G90 G54\nG0 X0 Y0 Z10\nG1 X50 Y0 F300\nM30",
       "machineName": "SIEMENS_840D",
-      "canalNr": "channel-1",
-      "customMachineConfig": {
-        "control_type": "SIEMENS",
-        "variable_prefix": "R",
-        "cycle_start_code": "START:"
-      }
+      "canalNr": "channel-1"
     }
   ]
 }
 ```
 
-*Note: `customMachineConfig` is optional (Bring Your Own Config - BYOC).*
+`customMachineConfig` can be supplied in a request when a frontend needs to run with a custom machine definition.
 
-**Response:**
-```json
-{
-  "canal": {
-    "channel-1": {
-      "segments": [
-        {
-          "type": "RAPID",
-          "lineNumber": 2,
-          "toolNumber": 1,
-          "points": [
-            {"x": 0, "y": 0, "z": 0},
-            {"x": 0, "y": 0, "z": 10}
-          ]
-        }
-      ],
-      "executedLines": [1, 2, 3, 4],
-      "variables": {},
-      "timing": [0.1, 0.1, 0.1, 0.1]
-    }
-  },
-  "message": ["Successfully processed ISO_MILL canal channel-1"],
-  "success": true
-}
-```
+Detailed CGI request and response documentation is in `docs/CGI_API.md`.
 
-## Supported Machines
+## Local Development
 
-The default available machine configurations are defined in `ncplot7py/config/machines.json` and currently include:
-- `SIEMENS_840D` - Siemens standard control
-- `FANUC_MILL` - FANUC milling machine
-- `FANUC_TURN` - FANUC turning machine
-- `FANUC_STAR_x-D_y-R_z_R` - FANUC basic lathe/Swiss
-- `FANUC_STAR_x-D_y-D_z_R` - FANUC for advanced Swiss
-
-## Deployment
-
-### Apache Configuration
-
-1. Enable CGI module:
-   ```bash
-   sudo a2enmod cgi
-   ```
-
-2. Configure virtual host:
-   ```apache
-   ScriptAlias /ncplot7py/scripts/ /var/www/NC-Edit7/ncplot7py/scripts/
-   
-   <Directory /var/www/NC-Edit7/ncplot7py/scripts>
-       Options +ExecCGI
-       AddHandler cgi-script .cgi
-       Require all granted
-   </Directory>
-   ```
-
-3. Make script executable:
-   ```bash
-   chmod +x cgiserver.cgi
-   ```
-
-### Testing
-
-Test the CGI script directly:
+Install the package in editable mode from the repository root:
 
 ```bash
-# List machines
-REQUEST_METHOD=POST CONTENT_LENGTH=30 python3 cgiserver.cgi <<EOF
-{"action": "list_machines"}
-EOF
-
-# Execute program
-cat > test.json <<'TESTEOF'
-{"machinedata": [{"program": "G0 X0 Y0\nG1 X50 Y0", "machineName": "FANUC_GENERIC", "canalNr": "1"}]}
-TESTEOF
-
-REQUEST_METHOD=POST CONTENT_LENGTH=$(wc -c < test.json) python3 cgiserver.cgi < test.json
+python -m pip install -e .
 ```
 
-## Current Implementation
+Run tests with the source package on `PYTHONPATH`:
 
-The current implementation is a **mock/demo version** that:
-- Generates simple plot data from basic G-code parsing
-- Provides placeholder execution results
-- Does not require external dependencies
-
-## Production Implementation
-
-For production use, this script should be replaced with or extended to:
-- Use the actual NC parser from the Python backend
-- Integrate with the full CNC state machine
-- Support advanced features like tool change detection, synchronization codes, etc.
-- Connect to MariaDB for logging (see rebuild-plan.md for environment variables)
-
-## Development
-
-For local development with Vite dev server, the `dev-cgi-proxy.js` plugin handles CGI requests by spawning the Python script.
-
-## Error Handling
-
-The script returns error responses with `message_TEST` field:
-
-```json
-{
-  "error": "Error description",
-  "message_TEST": ["Detailed error message"]
-}
+```bash
+PYTHONPATH=src python -m pytest
 ```
+
+On PowerShell:
+
+```powershell
+$env:PYTHONPATH='src'; python -m pytest
+```
+
+## CGI Deployment
+
+Only deploy the CGI script when a web server needs to expose the simulator through a CGI interface.
+
+Example Apache setup:
+
+```apache
+ScriptAlias /ncplot7py/scripts/ /var/www/NC-Edit7/ncplot7py/scripts/
+
+<Directory /var/www/NC-Edit7/ncplot7py/scripts>
+    Options +ExecCGI
+    AddHandler cgi-script .cgi
+    Require all granted
+</Directory>
+```
+
+Make the adapter executable on Unix-like systems:
+
+```bash
+chmod +x scripts/cgiserver.cgi
+```
+
+For local frontend development, a Vite proxy can spawn `scripts/cgiserver.cgi`, but this is still just an adapter around the Python simulation module.

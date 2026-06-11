@@ -79,6 +79,7 @@ On success, a JSON object similar to:
 }
 
 - `canal` contains the syncro plot data returned by the execution engine.
+- Each canal result includes `variables` for numeric register variables and `namedVariables` for Siemens named variables and flattened array elements such as `ANGLE_Z` and `CUSTOM_MC[3]`.
 - `message` is the project's message stack (diagnostics/info accumulated during processing).
 
 On error, the script returns a JSON-like error message such as:

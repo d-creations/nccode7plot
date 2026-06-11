@@ -1,5 +1,6 @@
 import unittest
 
+from ncplot7py.application.nc_execution import NCExecutionEngine
 from ncplot7py.domain.cnc_state import CNCState
 from ncplot7py.domain.machines import get_machine_config
 from ncplot7py.infrastructure.machines.base_stateful_control import UniversalConfigDrivenControl
@@ -92,6 +93,29 @@ class TestSiemensAdvancedProgrammingIntegration(unittest.TestCase):
         self.assertTrue(any(abs(point.x - 3.0) < 0.001 and abs(point.y - 9.0) < 0.001 for point in visited_points))
         self.assertTrue(any(abs(point.x - 4.0) < 0.001 and abs(point.y) < 0.001 and abs(point.z + 3.0) < 0.001 for point in visited_points))
         self.assertFalse(any(abs(point.x - 999.0) < 0.001 for point in visited_points))
+
+    def test_execution_output_exposes_named_variables_and_arrays(self):
+        state = CNCState(machine_config=get_machine_config("SIEMENS_840D"))
+        control = UniversalConfigDrivenControl(count_of_canals=1, init_nc_states=[state])
+        engine = NCExecutionEngine(control)
+
+        result = engine.get_Syncro_plot(
+            [
+                "DEF REAL CUSTOM_MC[4]\n"
+                "DEF REAL ANGLE_Z\n"
+                "CUSTOM_MC[0]=20\n"
+                "CUSTOM_MC[3]=12.5\n"
+                "ANGLE_Z=ATAN2(30,40)\n"
+                "G1 X1 F120"
+            ],
+            synch=False,
+        )
+
+        named_variables = result[0]["namedVariables"]
+
+        self.assertAlmostEqual(named_variables["ANGLE_Z"], 36.869897, places=5)
+        self.assertEqual(named_variables["CUSTOM_MC[0]"], 20.0)
+        self.assertEqual(named_variables["CUSTOM_MC[3]"], 12.5)
 
 
 if __name__ == "__main__":
