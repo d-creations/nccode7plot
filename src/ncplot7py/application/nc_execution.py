@@ -267,9 +267,12 @@ class NCExecutionEngine:
                     node = parser.parse(raw_line, source_line)
                     node_list.append(node)
                 except Exception as parse_exc:
-                    # Catch parsing errors for individual lines but continue
                     self._add_error(parse_exc, line=source_line, canal=canal_number+1)
-                    # Don't break - try to continue with other lines
+                    error = True
+                    break
+
+            if error:
+                break
 
             # Delegate execution to control; many controls accept an iterable
             # of nodes. Keep canal numbering consistent with callers (+1).

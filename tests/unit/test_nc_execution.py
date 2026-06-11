@@ -69,6 +69,18 @@ class FakeParser:
         return _ParserNode(line_nr)
 
 
+class FakeParserRaisesOnLine:
+    def __init__(self, line_nr):
+        self.line_nr = line_nr
+        self.calls = []
+
+    def parse(self, raw_line, line_nr=None):
+        self.calls.append((raw_line, line_nr))
+        if line_nr == self.line_nr:
+            raise ValueError("parse failed")
+        return _ParserNode(line_nr)
+
+
 class _RaisingChain:
     def handle(self, node, state):
         if node.nc_code_line_nr == 7:
@@ -175,6 +187,20 @@ class TestNCExecutionEngine(unittest.TestCase):
                 ("Messen", 3),
             ],
         )
+
+    def test_parse_error_stops_execution_immediately(self):
+        ctrl = FakeControlHappy()
+        engine = NCExecutionEngine(ctrl)
+        fake_parser = FakeParserRaisesOnLine(2)
+        engine._get_parser = lambda: fake_parser
+
+        result = engine.get_Syncro_plot(["G1 X1\nBAD\nG1 X2"], synch=False)
+
+        self.assertEqual(result, [[], []])
+        self.assertEqual(len(engine.errors), 1)
+        self.assertEqual(engine.errors[0]["line"], 2)
+        self.assertEqual(fake_parser.calls, [("G1 X1", 1), ("BAD", 2)])
+        self.assertEqual(ctrl._ran, [])
 
     def test_execution_error_reports_current_node_line(self):
         ctrl = FakeControlWrappedExecutionError()
