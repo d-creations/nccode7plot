@@ -156,6 +156,26 @@ class TestNCExecutionEngine(unittest.TestCase):
             ],
         )
 
+    def test_semicolon_commands_keep_editor_line_numbering(self):
+        ctrl = FakeControlHappy()
+        engine = NCExecutionEngine(ctrl)
+        fake_parser = FakeParser()
+        engine._get_parser = lambda: fake_parser
+
+        programs = ["G1 X1 Y1 Z1;_Pre_Position\nSTOPRE\nG1 X2 Y2 Z2;Messen"]
+        engine.get_Syncro_plot(programs, synch=False)
+
+        self.assertEqual(
+            fake_parser.calls,
+            [
+                ("G1 X1 Y1 Z1", 1),
+                ("_Pre_Position", 1),
+                ("STOPRE", 2),
+                ("G1 X2 Y2 Z2", 3),
+                ("Messen", 3),
+            ],
+        )
+
     def test_execution_error_reports_current_node_line(self):
         ctrl = FakeControlWrappedExecutionError()
         engine = NCExecutionEngine(ctrl)

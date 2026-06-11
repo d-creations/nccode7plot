@@ -1,0 +1,202 @@
+"""Siemens 840D flow-control handler."""
+from __future__ import annotations
+
+import re
+from typing import Dict, Optional, Tuple
+
+from ncplot7py.domain.cnc_state import CNCState
+from ncplot7py.domain.exec_chain import Handler
+from ncplot7py.shared.nc_nodes import NCCommandNode
+from ncplot7py.domain.handlers.siemens_mill_cnc.common import ensure_siemens_scope
+from ncplot7py.domain.handlers.siemens_mill_cnc.variable_handler import SiemensExpressionEvaluator
+
+
+class SiemensFlowControlHandler(Handler):
+    """Handle Siemens labels, GOTO variants, IF skipping, and simple FOR loops."""
+
+    def __init__(self, next_handler: Optional[Handler] = None):
+        super().__init__(next_handler=next_handler)
+        self._nodes: list[NCCommandNode] = []
+        self._labels: Dict[str, NCCommandNode] = {}
+        self._for_to_end: Dict[NCCommandNode, NCCommandNode] = {}
+        self._end_to_for: Dict[NCCommandNode, NCCommandNode] = {}
+        self._while_to_end: Dict[NCCommandNode, NCCommandNode] = {}
+        self._end_to_while: Dict[NCCommandNode, NCCommandNode] = {}
+        self._if_to_else_or_end: Dict[NCCommandNode, NCCommandNode] = {}
+        self._else_to_end: Dict[NCCommandNode, NCCommandNode] = {}
+        self._loop_state: Dict[int, Dict[str, float | str]] = {}
+        self._default_next: Dict[NCCommandNode, Optional[NCCommandNode]] = {}
+        self._evaluator = SiemensExpressionEvaluator()
+
+    def setup_maps(self, nodes: list[NCCommandNode]) -> None:
+        self._nodes = list(nodes)
+        self._labels = {}
+        self._for_to_end = {}
+        self._end_to_for = {}
+        self._while_to_end = {}
+        self._end_to_while = {}
+        self._if_to_else_or_end = {}
+        self._else_to_end = {}
+        self._loop_state = {}
+        self._default_next = {node: getattr(node, "_next_ncCode", None) for node in self._nodes}
+
+        for node in self._nodes:
+            command = (node.variable_command or "").strip()
+            if command.endswith(":"):
+                self._labels[command[:-1].upper()] = node
+
+        stack: list[NCCommandNode] = []
+        while_stack_by_label: Dict[str, NCCommandNode] = {}
+        if_stack: list[NCCommandNode] = []
+        for node in self._nodes:
+            command = (node.loop_command or "").strip()
+            upper = command.upper()
+            if upper.startswith("FOR"):
+                stack.append(node)
+            elif upper == "ENDFOR" and stack:
+                start = stack.pop()
+                self._for_to_end[start] = node
+                self._end_to_for[node] = start
+            elif upper.startswith("WHILE"):
+                label_match = re.search(r"DO(\d+)$", upper)
+                if label_match:
+                    while_stack_by_label[label_match.group(1)] = node
+            elif upper.startswith("END") and upper not in {"ENDIF", "ENDFOR", "ENDWHILE"}:
+                label = upper[3:]
+                start = while_stack_by_label.pop(label, None)
+                if start is not None:
+                    self._while_to_end[start] = node
+                    self._end_to_while[node] = start
+            elif upper == "ENDWHILE":
+                starts = list(while_stack_by_label.values())
+                if starts:
+                    start = starts[-1]
+                    self._while_to_end[start] = node
+                    self._end_to_while[node] = start
+            elif upper.startswith("IF") and "GOTO" not in upper:
+                if_stack.append(node)
+            elif upper == "ELSE" and if_stack:
+                self._if_to_else_or_end[if_stack[-1]] = node
+            elif upper == "ENDIF" and if_stack:
+                start = if_stack.pop()
+                self._if_to_else_or_end.setdefault(start, node)
+                for maybe_else, end in list(self._else_to_end.items()):
+                    if end is None:
+                        self._else_to_end[maybe_else] = node
+                previous = getattr(node, "_before_ncCode", None)
+                if previous and (previous.loop_command or "").upper() == "ELSE":
+                    self._else_to_end[previous] = node
+
+    def handle(self, node: NCCommandNode, state: CNCState) -> Tuple[Optional[list], Optional[float]]:
+        scope = ensure_siemens_scope(state)
+        scope["labels"] = self._labels
+        command = (node.loop_command or "").strip()
+        if not command:
+            return super().handle(node, state)
+
+        upper = command.upper()
+        if upper.startswith(("GOTOF", "GOTOB", "GOTOC", "GOTO")):
+            self._handle_goto(node, command)
+        elif upper.startswith("IF"):
+            self._handle_if(node, command, state)
+        elif upper == "ELSE":
+            end_node = self._find_matching_endif_after(node)
+            if end_node is not None:
+                node._next_ncCode = getattr(end_node, "_next_ncCode", None)
+        elif upper.startswith("FOR"):
+            self._handle_for(node, command, state)
+        elif upper == "ENDFOR":
+            self._handle_endfor(node, state)
+        elif upper.startswith("WHILE"):
+            self._handle_while(node, command, state)
+        elif upper.startswith("END") and upper not in {"ENDIF", "ENDFOR"}:
+            self._handle_endwhile(node, state)
+        return super().handle(node, state)
+
+    def _handle_goto(self, node: NCCommandNode, command: str) -> None:
+        match = re.match(r"^(GOTOF|GOTOB|GOTOC|GOTO)(.+)$", command, re.IGNORECASE)
+        if not match:
+            return
+        mode = match.group(1).upper()
+        label = match.group(2).strip().upper()
+        target = self._labels.get(label)
+        if target is not None:
+            node._next_ncCode = target
+        elif mode != "GOTOC":
+            return
+
+    def _handle_if(self, node: NCCommandNode, command: str, state: CNCState) -> None:
+        single_line = re.match(r"^IF(.+?)(GOTOF|GOTOB|GOTO)(.+)$", command, re.IGNORECASE)
+        if single_line:
+            condition, goto_mode, label = single_line.groups()
+            if self._evaluator.is_true(condition, state):
+                self._handle_goto(node, goto_mode + label)
+            return
+        condition = re.sub(r"^IF", "", command, count=1, flags=re.IGNORECASE)
+        if not self._evaluator.is_true(condition, state):
+            target = self._if_to_else_or_end.get(node)
+            if target is not None:
+                node._next_ncCode = getattr(target, "_next_ncCode", None) if (target.loop_command or "").upper() == "ELSE" else target
+
+    def _handle_for(self, node: NCCommandNode, command: str, state: CNCState) -> None:
+        match = re.match(r"^FOR([A-Za-z_][A-Za-z0-9_]*)=(.+?)TO(.+)$", command, re.IGNORECASE)
+        if not match:
+            return
+        variable_name, start_expr, end_expr = match.groups()
+        scope = ensure_siemens_scope(state)
+        start_value = self._evaluator.evaluate(start_expr, state)
+        end_value = self._evaluator.evaluate(end_expr, state)
+        scope["symbols"][variable_name] = int(start_value) if float(start_value).is_integer() else start_value
+        self._loop_state[id(node)] = {"variable": variable_name, "end": end_value}
+        if start_value > end_value:
+            end_node = self._for_to_end.get(node)
+            if end_node is not None:
+                node._next_ncCode = self._default_next.get(end_node)
+
+    def _handle_endfor(self, node: NCCommandNode, state: CNCState) -> None:
+        start_node = self._end_to_for.get(node)
+        if start_node is None:
+            return
+        loop_info = self._loop_state.get(id(start_node))
+        if not loop_info:
+            return
+        scope = ensure_siemens_scope(state)
+        variable_name = str(loop_info["variable"])
+        next_value = float(scope["symbols"].get(variable_name, 0.0)) + 1.0
+        scope["symbols"][variable_name] = int(next_value) if next_value.is_integer() else next_value
+        if next_value <= float(loop_info["end"]):
+            node._next_ncCode = getattr(start_node, "_next_ncCode", None)
+        else:
+            node._next_ncCode = self._default_next.get(node)
+
+    def _handle_while(self, node: NCCommandNode, command: str, state: CNCState) -> None:
+        match = re.match(r"^WHILE(.+?)(?:DO\d+)?$", command, re.IGNORECASE)
+        if not match:
+            return
+        condition = match.group(1)
+        if not self._evaluator.is_true(condition, state):
+            end_node = self._while_to_end.get(node)
+            if end_node is not None:
+                node._next_ncCode = self._default_next.get(end_node)
+
+    def _handle_endwhile(self, node: NCCommandNode, state: CNCState) -> None:
+        start_node = self._end_to_while.get(node)
+        if start_node is not None:
+            node._next_ncCode = start_node
+
+    def _find_matching_endif_after(self, node: NCCommandNode) -> Optional[NCCommandNode]:
+        depth = 0
+        current = getattr(node, "_next_ncCode", None)
+        while current is not None:
+            command = (current.loop_command or "").upper()
+            if command.startswith("IF"):
+                depth += 1
+            elif command == "ENDIF":
+                if depth == 0:
+                    return current
+                depth -= 1
+            current = getattr(current, "_next_ncCode", None)
+        return None
+
+
+__all__ = ["SiemensFlowControlHandler"]

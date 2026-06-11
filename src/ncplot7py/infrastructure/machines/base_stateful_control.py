@@ -10,6 +10,19 @@ from ncplot7py.shared.nc_nodes import NCCommandNode
 from ncplot7py.shared.point import Point
 
 
+def _format_node_debug(node: Optional[NCCommandNode]) -> Dict[str, Any]:
+    if node is None:
+        return {}
+    return {
+        "line": getattr(node, "nc_code_line_nr", None),
+        "g_code": sorted(getattr(node, "g_code", set()) or []),
+        "command_parameter": dict(getattr(node, "command_parameter", {}) or {}),
+        "loop_command": repr(getattr(node, "loop_command", None)),
+        "variable_command": repr(getattr(node, "variable_command", None)),
+        "dddp_command": sorted(getattr(node, "dddp_command", set()) or []),
+    }
+
+
 def _plane_from_default_code(default_plane: str) -> str:
     plane_code = str(default_plane or "").upper()
     if plane_code == "G18":
@@ -63,16 +76,15 @@ class BaseStatefulCanal(BaseNCCanalInterface):
             self._nodes[i]._next_ncCode = self._nodes[i + 1]
             self._nodes[i + 1]._before_ncCode = self._nodes[i]
 
-        # provide nodes to control handler so it can setup its maps for jumping
-        if self._control_handler is None and self._chain is not None:
-             from ncplot7py.domain.handlers.control_flow import ControlFlowHandler
-             self._control_handler = self._get_handler(ControlFlowHandler)
-
-        if self._control_handler is not None and hasattr(self._control_handler, "setup_maps"):
-            try:
-                self._control_handler.setup_maps(self._nodes)
-            except Exception:
-                pass
+        # provide nodes to control handlers so they can setup maps for jumping
+        current_handler = self._chain
+        while current_handler is not None:
+            if hasattr(current_handler, "setup_maps"):
+                try:
+                    current_handler.setup_maps(self._nodes)
+                except Exception:
+                    pass
+            current_handler = getattr(current_handler, "next_handler", None)
 
         node = self._nodes[0] if len(self._nodes) > 0 else None
         
@@ -98,6 +110,16 @@ class BaseStatefulCanal(BaseNCCanalInterface):
                 except ExceptionNode:
                     raise
                 except Exception as exc:
+                    logger.error(
+                        "NC execution failure at line=%s node=%s prev=%s next=%s state_parameters=%s siemens=%s",
+                        getattr(node, "nc_code_line_nr", 0) or 0,
+                        _format_node_debug(node),
+                        _format_node_debug(getattr(node, "_before_ncCode", None)),
+                        _format_node_debug(getattr(node, "_next_ncCode", None)),
+                        dict(getattr(self._state, "parameters", {}) or {}),
+                        dict(getattr(getattr(self._state, "extra", {}), "get", lambda *_: {})("siemens", {}) or {}),
+                        exc_info=True,
+                    )
                     raise_nc_error(
                         ExceptionTyps.NCCodeErrors,
                         1999,
@@ -239,6 +261,12 @@ HANDLER_REGISTRY = {
     "star_turn": ("ncplot7py.domain.handlers.star_machine.star_turn_handler", "StarTurnHandler"),
     
     # Siemens Specific
+    "siemens_variables": ("ncplot7py.domain.handlers.siemens_mill_cnc.variable_handler", "SiemensVariableHandler"),
+    "siemens_flow_control": ("ncplot7py.domain.handlers.siemens_mill_cnc.flow_control_handler", "SiemensFlowControlHandler"),
+    "siemens_builtins": ("ncplot7py.domain.handlers.siemens_mill_cnc.builtin_handler", "SiemensBuiltinHandler"),
+    "siemens_frames": ("ncplot7py.domain.handlers.siemens_mill_cnc.frame_handler", "SiemensFrameHandler"),
+    "siemens_transformations": ("ncplot7py.domain.handlers.siemens_mill_cnc.transformation_handler", "SiemensTransformationHandler"),
+    "siemens_path_mode": ("ncplot7py.domain.handlers.siemens_mill_cnc.path_mode_handler", "SiemensPathModeHandler"),
     "siemens_mode": ("ncplot7py.domain.handlers.siemens_mill_cnc.mode_handler", "SiemensModeHandler"),
     "siemens_named_cycles": ("ncplot7py.domain.handlers.siemens_mill_cnc.cycles_handler", "SiemensNamedCyclesHandler"),
     "siemens_iso_cycles": ("ncplot7py.domain.handlers.siemens_mill_cnc.cycles_handler", "SiemensISOCyclesHandler"),

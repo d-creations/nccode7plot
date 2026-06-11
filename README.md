@@ -1,10 +1,14 @@
-# NC-Edit7 CGI Server
+# NC-Edit7 CNC Macine Ploter
+
+This is a plot to plot nc programs. It is a module that cn be used.
+
+## Server Endpoint
 
 This directory contains the CGI server script for handling plot requests from the NC-Edit7 frontend.
 
 ## Overview
 
-The `cgiserver.cgi` script is a Python CGI script that:
+This i s a Modul that:
 - Lists available CNC machines
 - Processes NC programs and generates plot data
 - Returns execution results including toolpath segments, variables, and timing

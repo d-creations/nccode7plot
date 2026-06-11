@@ -12,6 +12,7 @@ class MachineConfig:
     variable_pattern: str  # Regex for variables, e.g. r"#(\d+)" or r"R(\d+)"
     variable_prefix: str   # Prefix for variables, e.g. "#" or "R"
     tool_range: Tuple[int, int]
+    parser_name: str = "fanuc"
     machine_type: str = "MILL"
     channels: int = 1
     synchronization_strategy: str = "NONE"
@@ -36,6 +37,7 @@ FANUC_GENERIC_CONFIG = MachineConfig(
     control_type='FANUC',
     variable_pattern=r'#(\d+)',
     variable_prefix='#',
+    parser_name='fanuc',
     tool_range=(0, 9999),
 )
 
@@ -66,6 +68,7 @@ def load_machine_configs():
                     control_type=val['control_type'],
                     variable_pattern=val['variable_pattern'],
                     variable_prefix=val['variable_prefix'],
+                    parser_name=val.get('parser_name', 'siemens' if val.get('control_type') == 'SIEMENS' else 'fanuc'),
                     tool_range=tuple(val['tool_range']),
                     machine_type=val.get('machine_type', 'MILL'),
                     channels=val.get('channels', 1),
@@ -134,10 +137,17 @@ def get_machine_regex_patterns(control_type: str) -> Dict[str, Any]:
 
     if config.control_type == "SIEMENS":
         # Siemens specific keywords: Named tools, Cycles, MCALL, M30, M17
-        keyword_pattern = r"(?:T=\"[^\"]+\"|CYCLE\\d+|POCKET\\d+|MCALL|M30|M17)"
-        keyword_desc = "Keywords: T=\"Name\", CYCLE..., POCKET..., MCALL, M30, M17"
+        keyword_pattern = r"(?:T=\"[^\"]+\"|CYCLE\d+|POCKET\d+|HOLES\d+|SLOT\d+|LONGHOLE|MCALL|M30|M17|RET|MSG|SETAL|STOPRE|NEWCONF|TRAORI|TRAFOOF|TRANS|ATRANS|ROT|AROT|CTRANS|CROT|SPOS|G64|G53|G54|G55|G56|G57|G58|G59)"
+        keyword_desc = "Keywords: T=\"Name\", CYCLE..., POCKET..., HOLES..., SLOT..., MCALL, SETAL, STOPRE, TRAORI/TRAFOOF, frames, SPOS, G53-G59, G64, M30, M17, RET"
 
     # Base patterns common to most machines
+    variable_pattern = config.variable_pattern.replace('\\', '\\\\')
+    variable_description = f"Variables {config.variable_prefix}1 - {config.variable_prefix}999"
+
+    if config.control_type == "SIEMENS":
+        variable_pattern = r"(?:R\d+|\$[A-Za-z0-9_]+(?:\[[^\]]+\])?|[A-Za-z_][A-Za-z0-9_]*(?:\[[^\]]+\])?)"
+        variable_description = "Siemens variables: R parameters, $ system variables, named symbols, and array elements"
+
     base_patterns = {
         "tools": {
             "pattern": tool_pattern,
@@ -145,8 +155,8 @@ def get_machine_regex_patterns(control_type: str) -> Dict[str, Any]:
             "range": {"min": config.tool_range[0], "max": config.tool_range[1]}
         },
         "variables": {
-            "pattern": config.variable_pattern.replace('\\', '\\\\'),
-            "description": f"Variables {config.variable_prefix}1 - {config.variable_prefix}999",
+            "pattern": variable_pattern,
+            "description": variable_description,
             "range": {"min": 1, "max": 999}
         },
         "keywords": {

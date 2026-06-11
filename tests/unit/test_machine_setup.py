@@ -3,11 +3,17 @@ from unittest.mock import mock_open, patch
 
 from ncplot7py.domain.cnc_state import CNCState
 from ncplot7py.domain import machines
-from ncplot7py.domain.machines import FANUC_GENERIC_CONFIG, MachineConfig, get_machine_config
+from ncplot7py.domain.machines import FANUC_GENERIC_CONFIG, MachineConfig, get_machine_config, get_machine_regex_patterns
 from ncplot7py.infrastructure.machines.base_stateful_control import HANDLER_REGISTRY, UniversalConfigDrivenCanal
 
 
 class TestMachineSetup(unittest.TestCase):
+    def setUp(self):
+        self._machine_configs = machines.MACHINE_CONFIGS.copy()
+
+    def tearDown(self):
+        machines.MACHINE_CONFIGS = self._machine_configs
+
     def test_unknown_machine_name_falls_back_to_generic_config(self):
         config = get_machine_config("DOES_NOT_EXIST")
 
@@ -43,6 +49,7 @@ class TestMachineSetup(unittest.TestCase):
             control_type="FANUC",
             variable_pattern=r'#(\d+)',
             variable_prefix='#',
+            parser_name="fanuc",
             tool_range=(0, 99),
             machine_type="TURN",
             supported_gcode_groups=("motion",),
@@ -54,7 +61,9 @@ class TestMachineSetup(unittest.TestCase):
     def test_load_machine_configs_prefers_package_local_config(self):
         mocked_open = mock_open(read_data='{}')
 
-        with patch("ncplot7py.domain.machines.os.path.exists", return_value=True), patch(
+        with patch("ncplot7py.domain.machines.files", side_effect=FileNotFoundError), patch(
+            "ncplot7py.domain.machines.os.path.exists", return_value=True
+        ), patch(
             "builtins.open", mocked_open
         ):
             machines.load_machine_configs()
@@ -67,7 +76,9 @@ class TestMachineSetup(unittest.TestCase):
     def test_load_machine_configs_falls_back_to_legacy_config(self):
         mocked_open = mock_open(read_data='{}')
 
-        with patch("ncplot7py.domain.machines.os.path.exists", return_value=False), patch(
+        with patch("ncplot7py.domain.machines.files", side_effect=FileNotFoundError), patch(
+            "ncplot7py.domain.machines.os.path.exists", return_value=False
+        ), patch(
             "builtins.open", mocked_open
         ):
             machines.load_machine_configs()
@@ -86,6 +97,40 @@ class TestMachineSetup(unittest.TestCase):
             HANDLER_REGISTRY["wait_code"],
             ("ncplot7py.domain.handlers.modal", "ModalHandler"),
         )
+
+    def test_siemens_frontend_regex_patterns_include_advanced_commands_and_variables(self):
+        patterns = get_machine_regex_patterns("SIEMENS_840D")
+
+        keyword_pattern = patterns["keywords"]["pattern"]
+        for keyword in ["G64", "G53", "G54", "TRAORI", "TRAFOOF", "SETAL", "SPOS", "RET"]:
+            self.assertRegex(keyword, keyword_pattern)
+
+        variable_pattern = patterns["variables"]["pattern"]
+        for variable in ["R10", "$AA_MW[X]", "$P_UIFR[ORIGIN_GP]", "CUSTOM_MC[3]", "ANGLE_Z"]:
+            self.assertRegex(variable, variable_pattern)
+
+    def test_siemens_editor_syntax_rules_include_advanced_commands_and_variables(self):
+        import json
+        import os
+
+        config_path = os.path.join(os.path.dirname(machines.__file__), "..", "config", "machines.json")
+        with open(config_path, "r", encoding="utf-8") as config_file:
+            data = json.load(config_file)
+
+        rules = data["SIEMENS_840D"]["syntax_rules"]
+        by_token = {rule["token"]: rule["regex"] for rule in rules if isinstance(rule["token"], str)}
+
+        self.assertIn("TRAORI", by_token["keyword.control.siemens"])
+        self.assertIn("SETAL", by_token["keyword.control.siemens"])
+        self.assertIn("GOTOF", by_token["keyword.control"])
+        self.assertIn("ATAN2", by_token["support.function"])
+        self.assertIn("variable.other.system.siemens", by_token)
+        self.assertIn("variable.other.named.siemens", by_token)
+
+    def test_machine_configs_expose_parser_name_by_control_family(self):
+        self.assertEqual(get_machine_config("FANUC_MILL").parser_name, "fanuc")
+        self.assertEqual(get_machine_config("FANUC_TURN").parser_name, "fanuc")
+        self.assertEqual(get_machine_config("SIEMENS_840D").parser_name, "siemens")
 
 
 if __name__ == '__main__':

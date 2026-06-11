@@ -109,7 +109,9 @@ def build_segments_from_engine_output(canal_output: Dict[str, Any]) -> Dict[str,
     """Convert NCExecutionEngine canal output to the legacy response shape."""
     segments = []
     timing = []
-    executed_lines = canal_output.get("programExec", [])
+    executed_node_lines = canal_output.get("programExec", [])
+    motion_line_numbers = []
+    line_timing = {}
 
     plot_list = canal_output.get("plot", [])
 
@@ -132,17 +134,29 @@ def build_segments_from_engine_output(canal_output: Dict[str, Any]) -> Dict[str,
 
         seg = {
             "type": "RAPID" if (not t or float(t) == 0) else "LINEAR",
-            "lineNumber": executed_lines[idx] if idx < len(executed_lines) else None,
+            "lineNumber": entry.get("lineNumber") if entry.get("lineNumber") is not None else (executed_node_lines[idx] if idx < len(executed_node_lines) else None),
             "toolNumber": 1,
             "points": points,
         }
         segments.append(seg)
         try:
-            timing.append(float(t))
+            segment_time = float(t)
         except Exception:
-            timing.append(0.0)
+            segment_time = 0.0
+        timing.append(segment_time)
+        motion_line_numbers.append(seg["lineNumber"])
+        if seg["lineNumber"] is not None:
+            line_key = str(seg["lineNumber"])
+            line_timing[line_key] = line_timing.get(line_key, 0.0) + segment_time
 
-    return {"segments": segments, "executedLines": executed_lines, "variables": {}, "timing": timing}
+    return {
+        "segments": segments,
+        "executedLines": motion_line_numbers,
+        "executedNodeLines": executed_node_lines,
+        "variables": {},
+        "timing": timing,
+        "lineTiming": line_timing,
+    }
 
 def mock_parse_nc_program(program: str, machine_name: str) -> Dict[str, Any]:
     """

@@ -2,6 +2,7 @@
   "FANUC_STAR_x-D_y-R_z_R": {
     "name": "FANUC_STAR_x-D_y-R_z_R",
     "control_type": "FANUC",
+    "parser_name": "fanuc",
     "machine_type": "TURN_MILL",
     "channels": 2,
     "synchronization_strategy": "STAR_WAIT",
@@ -92,6 +93,7 @@
   "FANUC_STAR_x-D_y-D_z_R": {
     "name": "FANUC_STAR_x-D_y-D_z_R",
     "control_type": "FANUC",
+    "parser_name": "fanuc",
     "machine_type": "TURN_MILL",
     "channels": 2,
     "synchronization_strategy": "STAR_WAIT",
@@ -183,6 +185,7 @@
   "FANUC_TURN": {
     "name": "FANUC_TURN",
     "control_type": "FANUC",
+    "parser_name": "fanuc",
     "machine_type": "TURN",
     "channels": 1,
     "synchronization_strategy": "NONE",
@@ -271,6 +274,7 @@
   "FANUC_MILL": {
     "name": "FANUC_MILL",
     "control_type": "FANUC",
+    "parser_name": "fanuc",
     "machine_type": "MILL",
     "channels": 1,
     "synchronization_strategy": "NONE",
@@ -357,12 +361,17 @@
   "SIEMENS_840D": {
     "name": "SIEMENS_840D",
     "control_type": "SIEMENS",
+    "parser_name": "siemens",
     "machine_type": "MILL",
     "channels": 1,
     "synchronization_strategy": "NONE",
     "supported_gcode_groups": [
-      "variable",
-      "control_flow",
+      "siemens_variables",
+      "siemens_flow_control",
+      "siemens_builtins",
+      "siemens_frames",
+      "siemens_transformations",
+      "siemens_path_mode",
       "siemens_mode",
       "siemens_named_cycles",
       "siemens_iso_cycles",
@@ -411,23 +420,31 @@
       },
       {
         "token": "keyword.control.siemens",
-        "regex": "(?:CYCLE|POCKET|HOLES|SLOT)\\d+|MCALL|M30|M17|WORKPIECE|REPEAT|MSG"
+        "regex": "(?:CYCLE|POCKET|HOLES|SLOT)\\d+|MCALL|M30|M17|RET|WORKPIECE|REPEAT|MSG|SETAL|STOPRE|NEWCONF|TRAORI|TRAFOOF|TRANS|ATRANS|ROT|AROT|CTRANS|CROT|SPOS"
       },
       {
         "token": "keyword.control",
-        "regex": "\\b(?:GOTO|IF|WHILE|DO|END)\\b"
+        "regex": "\\b(?:GOTOF|GOTOB|GOTO|GOTOC|IF|ELSE|ENDIF|FOR|ENDFOR|WHILE|ENDWHILE|LOOP|ENDLOOP|REPEAT|UNTIL|CASE|DEFAULT|OF)\\b"
       },
       {
         "token": "support.function",
-        "regex": "\\b(?:SQRT|ASIN|ACOS|ATAN|SIN|COS|TAN|ABS|BIN|BCD|ROUND|FIX|FUP)\\b"
+        "regex": "\\b(?:SQRT|ASIN|ACOS|ATAN|ATAN2|SIN|COS|TAN|ABS|POT|TRUNC|LN|EXP|BIN|BCD|ROUND|FIX|FUP|TOUPPER|TOLOWER|STRLEN|INDEX|RINDEX|MINDEX|MATCH|SUBSTR|ISNUMBER|NUMBER|AXNAME|AXSTRING)\\b"
+      },
+      {
+        "token": "variable.other.system.siemens",
+        "regex": "\\$[A-Za-z0-9_]+(?:\\[[^\\]]+\\])?"
+      },
+      {
+        "token": "variable.other.named.siemens",
+        "regex": "\\b[A-Za-z_][A-Za-z0-9_]*(?:\\[[^\\]]+\\])?(?=\\s*(?:=|,|\\)|\\+|-|\\*|/|<|>))"
       },
       {
         "token": "keyword.operator",
-        "regex": "[\\+\\-\\*\\/=]"
+        "regex": "<>|==|>=|<=|[\\+\\-\\*\\/=<>:]|\\b(?:AND|OR|NOT|XOR|DIV|MOD|B_AND|B_OR|B_NOT|B_XOR)\\b"
       },
       {
         "token": "variable.parameter",
-        "regex": "R(\\d+)"
+        "regex": "\\bR(\\d+)\\b"
       },
       {
         "token": "constant.language.gcode",

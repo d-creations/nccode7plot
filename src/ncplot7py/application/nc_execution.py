@@ -8,8 +8,7 @@ with the previous implementation.
 from __future__ import annotations
 
 import time
-import re
-from typing import List, Dict, Optional, Any
+from typing import List, Dict, Optional, Any, Tuple
 
 from ncplot7py.shared import (
     configure_logging,
@@ -164,17 +163,35 @@ class NCExecutionEngine:
             parser_cls = registry.get("parser", "BaseNCCommandParser")
         if parser_cls is None:
             raise RuntimeError("No NC command parser registered")
-        return parser_cls()
+        parser_name = None
+        try:
+            state = self._get_canal_state(0)
+            machine_config = getattr(state, "machine_config", None)
+            parser_name = getattr(machine_config, "parser_name", None)
+        except Exception:
+            parser_name = None
+        try:
+            return parser_cls(parser_name=parser_name)
+        except TypeError:
+            return parser_cls()
 
-    def _split_program_lines(self, program: str) -> List[str]:
+    def _split_program_lines(self, program: str) -> List[Tuple[str, int]]:
         """Split an NC program string into command lines.
 
         Supports both legacy semicolon-separated input and newline-separated
         input, which is common when programs are pasted as multi-line text.
+        Each returned command carries its original editor line number.
         """
         if program is None:
             return []
-        return [line for line in re.split(r"(?:;|\r\n|\n|\r)", program)]
+        split_lines: List[Tuple[str, int]] = []
+        for line_number, physical_line in enumerate(program.splitlines(), start=1):
+            for command in physical_line.split(";"):
+                split_lines.append((command, line_number))
+
+        if not split_lines and program:
+            split_lines.append((program, 1))
+        return split_lines
 
     def get_Syncro_plot(self, programs: List[str], synch: bool) -> List[Dict]:
         """Create the plot for the given NC `programs`.
@@ -211,18 +228,17 @@ class NCExecutionEngine:
             # Parse program into a list of command nodes
             node_list = []
             raw_lines = self._split_program_lines(program)
-            for i, raw_line in enumerate(raw_lines):
-                # Skip empty lines for parsing, but 'i' (line number) increments naturally
+            for raw_line, source_line in raw_lines:
+                # Skip empty commands for parsing, but keep source_line tied to editor line numbers.
                 if not raw_line.strip():
                     continue
                 
                 try:
-                    # Pass 1-based line number
-                    node = parser.parse(raw_line, i + 1)
+                    node = parser.parse(raw_line, source_line)
                     node_list.append(node)
                 except Exception as parse_exc:
                     # Catch parsing errors for individual lines but continue
-                    self._add_error(parse_exc, line=i+1, canal=canal_number+1)
+                    self._add_error(parse_exc, line=source_line, canal=canal_number+1)
                     # Don't break - try to continue with other lines
 
             # Delegate execution to control; many controls accept an iterable
