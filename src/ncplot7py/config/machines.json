@@ -403,6 +403,13 @@
     "a_axis_shortest_path": false,
     "b_axis_shortest_path": false,
     "c_axis_shortest_path": false,
+    "rotary_axis_planes": {
+      "A": "YZ",
+      "B": "XZ",
+      "C": "XY"
+    },
+    "seventh_axis_name": "LA1",
+    "seventh_axis_maps_to": null,
     "polar_interpolate_axis": "Y",
     "diameter_axes": [],
     "syntax_rules": [

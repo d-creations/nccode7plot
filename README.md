@@ -1,6 +1,6 @@
 # NC-Edit7 CNC Macine Ploter
 
-This is a plot to plot nc programs. It is a module that cn be used.
+This is a CNC-Simulation to plot nc programs. You can define a CNC control and Execute the CNC Program and recive the points.  It can be used as a python  module or CGI Api interface.
 
 ## Server Endpoint
 

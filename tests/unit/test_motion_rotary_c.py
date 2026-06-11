@@ -51,6 +51,91 @@ def test_off_center_h_axis_move_is_incremental_c_rotation():
     assert math.isclose(points[-1].y, -50.0, abs_tol=1e-6)
 
 
+def test_a_axis_rotates_yz_plane_for_plotting():
+    state = CNCState()
+    state.update_axes({"Y": 50.0, "Z": 0.0, "A": 0.0})
+    state.feed_rate = 60.0
+
+    node = NCCommandNode(g_code_command={"G1"}, command_parameter={"A": "90"})
+
+    points, duration = MotionHandler().handle(node, state)
+
+    assert duration and duration > 0.0
+    assert len(points) > 2
+    assert math.isclose(state.get_axis("A"), 90.0, abs_tol=1e-6)
+    assert math.isclose(points[0].y, 50.0, abs_tol=1e-6)
+    assert math.isclose(points[0].z, 0.0, abs_tol=1e-6)
+    assert math.isclose(points[-1].y, 0.0, abs_tol=1e-6)
+    assert math.isclose(points[-1].z, 50.0, abs_tol=1e-6)
+
+
+def test_b_axis_rotates_xz_plane_for_plotting():
+    state = CNCState()
+    state.update_axes({"X": 50.0, "Z": 0.0, "B": 0.0})
+    state.feed_rate = 60.0
+
+    node = NCCommandNode(g_code_command={"G1"}, command_parameter={"B": "90"})
+
+    points, duration = MotionHandler().handle(node, state)
+
+    assert duration and duration > 0.0
+    assert len(points) > 2
+    assert math.isclose(state.get_axis("B"), 90.0, abs_tol=1e-6)
+    assert math.isclose(points[0].x, 50.0, abs_tol=1e-6)
+    assert math.isclose(points[0].z, 0.0, abs_tol=1e-6)
+    assert math.isclose(points[-1].x, 0.0, abs_tol=1e-6)
+    assert math.isclose(points[-1].z, 50.0, abs_tol=1e-6)
+
+
+def test_configured_seventh_axis_is_motion_axis():
+    state = CNCState(
+        machine_config=MachineConfig(
+            name="TEST_7_AXIS",
+            control_type="SIEMENS",
+            variable_pattern=r"R(\d+)",
+            variable_prefix="R",
+            tool_range=(0, 9999),
+            supported_gcode_groups=("motion",),
+            seventh_axis_name="LA1",
+        )
+    )
+    state.feed_rate = 60.0
+
+    node = NCCommandNode(g_code_command={"G1"}, command_parameter={"LA1": "12"})
+
+    points, duration = MotionHandler().handle(node, state)
+
+    assert points is not None
+    assert duration and duration > 0.0
+    assert math.isclose(state.get_axis("LA1"), 12.0, abs_tol=1e-6)
+
+
+def test_configured_seventh_axis_can_map_to_motion_axis():
+    state = CNCState(
+        machine_config=MachineConfig(
+            name="TEST_7_AXIS_MAPPED",
+            control_type="SIEMENS",
+            variable_pattern=r"R(\d+)",
+            variable_prefix="R",
+            tool_range=(0, 9999),
+            supported_gcode_groups=("motion",),
+            seventh_axis_name="LA1",
+            seventh_axis_maps_to="X",
+        )
+    )
+    state.feed_rate = 60.0
+
+    node = NCCommandNode(g_code_command={"G1"}, command_parameter={"LA1": "12"})
+
+    points, duration = MotionHandler().handle(node, state)
+
+    assert points is not None
+    assert duration and duration > 0.0
+    assert math.isclose(state.get_axis("LA1"), 12.0, abs_tol=1e-6)
+    assert math.isclose(state.get_axis("X"), 12.0, abs_tol=1e-6)
+    assert math.isclose(points[-1].x, 12.0, abs_tol=1e-6)
+
+
 def test_rapid_move_has_zero_duration_without_feed_rate():
     state = CNCState()
     state.update_axes({"Y": 0.0, "Z": 0.0})

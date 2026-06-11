@@ -53,6 +53,10 @@ class MotionHandler(Handler):
             interp_mode = self._normalize_interp_mode(g) or interp_mode
 
         motion_axes = {"X", "Y", "Z", "A", "B", "C", "U", "V", "W", "H"}
+        seventh_axis_name = self._get_seventh_axis_name(state)
+        seventh_axis_maps_to = self._get_seventh_axis_maps_to(state)
+        if seventh_axis_name:
+            motion_axes.add(seventh_axis_name)
         has_motion_words = any(str(key).upper() in motion_axes for key in node.command_parameter)
 
         if interp_mode is None and has_motion_words:
@@ -76,6 +80,11 @@ class MotionHandler(Handler):
             key = k.upper()
             if key in ("X", "Y", "Z", "A", "B", "C"):
                 absolute_target_spec[key] = _to_float(v)
+            elif seventh_axis_name and key == seventh_axis_name:
+                value = _to_float(v)
+                absolute_target_spec[key] = value
+                if seventh_axis_maps_to and seventh_axis_maps_to not in absolute_target_spec:
+                    absolute_target_spec[seventh_axis_maps_to] = value
             elif key in ("U", "V", "W", "H"):
                 # UVW are incremental XYZ moves and H is an incremental C move.
                 mapped = {"U": "X", "V": "Y", "W": "Z", "H": "C"}[key]
@@ -123,11 +132,14 @@ class MotionHandler(Handler):
         state: CNCState,
         rapid: bool = False,
     ) -> Tuple[List[Point], float]:
-        # compute distance in XYZ space and include C-axis sweep as physical
-        # travel when the tool is offset from the rotary center.
-        axes = ("X", "Y", "Z")
+        # compute distance in XYZ space and configured linear add-on axes, then
+        # include rotary sweeps as physical travel when the tool is off-center.
+        axes = ["X", "Y", "Z"]
+        seventh_axis_name = self._get_seventh_axis_name(state)
+        if seventh_axis_name and not self._get_seventh_axis_maps_to(state):
+            axes.append(seventh_axis_name)
         linear_dist = state.compute_distance(start, end, axes=list(axes))
-        rotary_dist = self._estimate_c_axis_travel(start, end, state)
+        rotary_dist = self._estimate_rotary_axes_travel(start, end, state)
         dist = math.hypot(linear_dist, rotary_dist)
         if dist <= 0.0:
             # no motion
@@ -297,7 +309,7 @@ class MotionHandler(Handler):
 
         radius = math.hypot(start_u - center_u, start_v - center_v)
         arc_length = abs(da) * radius
-        rotary_dist = self._estimate_c_axis_travel(start, end, state)
+        rotary_dist = self._estimate_rotary_axes_travel(start, end, state)
         motion_length = math.hypot(arc_length, rotary_dist)
         # n segments — allow per-state override like in linear interpolation
         try:
@@ -345,37 +357,123 @@ class MotionHandler(Handler):
 
         return points, duration
 
-    def _estimate_c_axis_travel(self, start: Dict[str, float], end: Dict[str, float], state: CNCState) -> float:
-        start_c = start.get("C", 0.0)
-        end_c = end.get("C", start_c)
-        if math.isclose(start_c, end_c, abs_tol=1e-9):
-            return 0.0
+    def _estimate_rotary_axes_travel(self, start: Dict[str, float], end: Dict[str, float], state: CNCState) -> float:
+        travel_squared = 0.0
+        for axis, plane in self._get_rotary_axis_planes(state).items():
+            start_angle = start.get(axis, 0.0)
+            end_angle = end.get(axis, start_angle)
+            if math.isclose(start_angle, end_angle, abs_tol=1e-9):
+                continue
 
-        center_x, center_y = self._get_c_axis_center(state)
-        start_radius = math.hypot(start.get("X", 0.0) - center_x, start.get("Y", 0.0) - center_y)
-        end_radius = math.hypot(end.get("X", 0.0) - center_x, end.get("Y", 0.0) - center_y)
-        effective_radius = max(start_radius, end_radius)
-        if effective_radius <= 1e-9:
-            return 0.0
-        return abs(math.radians(end_c - start_c)) * effective_radius
+            radius = self._get_rotary_effective_radius(axis, plane, start, end, state)
+            if radius <= 1e-9:
+                continue
+            travel = abs(math.radians(end_angle - start_angle)) * radius
+            travel_squared += travel * travel
+        return math.sqrt(travel_squared)
 
     def _transform_points_for_plot(self, points: List[Point], state: CNCState) -> List[Point]:
-        center_x, center_y = self._get_c_axis_center(state)
+        center_x, center_y, center_z = self._get_rotary_center(state)
         transformed: List[Point] = []
         for point in points:
-            angle_rad = math.radians(point.c)
-            rel_x = point.x - center_x
-            rel_y = point.y - center_y
-            plot_x = center_x + rel_x * math.cos(angle_rad) - rel_y * math.sin(angle_rad)
-            plot_y = center_y + rel_x * math.sin(angle_rad) + rel_y * math.cos(angle_rad)
-            transformed.append(Point(x=plot_x, y=plot_y, z=point.z, a=point.a, b=point.b, c=point.c))
+            plot_x, plot_y, plot_z = point.x, point.y, point.z
+            for axis, plane in self._get_rotary_axis_planes(state).items():
+                angle = getattr(point, axis.lower(), 0.0)
+                plot_x, plot_y, plot_z = self._rotate_point_in_plane(
+                    plot_x,
+                    plot_y,
+                    plot_z,
+                    center_x,
+                    center_y,
+                    center_z,
+                    plane,
+                    angle,
+                )
+            transformed.append(Point(x=plot_x, y=plot_y, z=plot_z, a=point.a, b=point.b, c=point.c))
         return transformed
 
     def _get_c_axis_center(self, state: CNCState) -> Tuple[float, float]:
-        center = getattr(state, "extra", {}).get("c_axis_center", (0.0, 0.0))
+        center = getattr(state, "extra", {}).get("c_axis_center", getattr(state, "extra", {}).get("rotary_center", (0.0, 0.0)))
         if isinstance(center, (list, tuple)) and len(center) >= 2:
             return float(center[0]), float(center[1])
         return 0.0, 0.0
+
+    def _get_rotary_center(self, state: CNCState) -> Tuple[float, float, float]:
+        center = getattr(state, "extra", {}).get("rotary_center", None)
+        if isinstance(center, (list, tuple)) and len(center) >= 3:
+            return float(center[0]), float(center[1]), float(center[2])
+        center_x, center_y = self._get_c_axis_center(state)
+        return center_x, center_y, 0.0
+
+    def _get_rotary_axis_planes(self, state: CNCState) -> Dict[str, str]:
+        planes = getattr(getattr(state, "machine_config", None), "rotary_axis_planes", None)
+        if not isinstance(planes, dict):
+            planes = {"A": "YZ", "B": "XZ", "C": "XY"}
+        return {str(axis).upper(): str(plane).upper().replace("_", "") for axis, plane in planes.items() if axis and plane}
+
+    def _get_seventh_axis_name(self, state: CNCState) -> Optional[str]:
+        name = getattr(getattr(state, "machine_config", None), "seventh_axis_name", None)
+        if name is None:
+            name = getattr(state, "extra", {}).get("seventh_axis_name")
+        if name is None:
+            return None
+        text = str(name).strip().upper()
+        return text or None
+
+    def _get_seventh_axis_maps_to(self, state: CNCState) -> Optional[str]:
+        mapped = getattr(getattr(state, "machine_config", None), "seventh_axis_maps_to", None)
+        if mapped is None:
+            mapped = getattr(state, "extra", {}).get("seventh_axis_maps_to")
+        if mapped is None:
+            return None
+        text = str(mapped).strip().upper()
+        return text if text in {"X", "Y", "Z", "A", "B", "C"} else None
+
+    def _get_rotary_effective_radius(
+        self,
+        axis: str,
+        plane: str,
+        start: Dict[str, float],
+        end: Dict[str, float],
+        state: CNCState,
+    ) -> float:
+        center_x, center_y, center_z = self._get_rotary_center(state)
+
+        def radius(position: Dict[str, float]) -> float:
+            if plane == "YZ":
+                return math.hypot(position.get("Y", 0.0) - center_y, position.get("Z", 0.0) - center_z)
+            if plane == "XZ":
+                return math.hypot(position.get("X", 0.0) - center_x, position.get("Z", 0.0) - center_z)
+            return math.hypot(position.get("X", 0.0) - center_x, position.get("Y", 0.0) - center_y)
+
+        return max(radius(start), radius(end))
+
+    def _rotate_point_in_plane(
+        self,
+        x: float,
+        y: float,
+        z: float,
+        center_x: float,
+        center_y: float,
+        center_z: float,
+        plane: str,
+        angle_deg: float,
+    ) -> Tuple[float, float, float]:
+        if math.isclose(angle_deg, 0.0, abs_tol=1e-12):
+            return x, y, z
+
+        angle_rad = math.radians(angle_deg)
+        cos_a = math.cos(angle_rad)
+        sin_a = math.sin(angle_rad)
+        rel_x = x - center_x
+        rel_y = y - center_y
+        rel_z = z - center_z
+
+        if plane == "YZ":
+            return x, center_y + rel_y * cos_a - rel_z * sin_a, center_z + rel_y * sin_a + rel_z * cos_a
+        if plane == "XZ":
+            return center_x + rel_x * cos_a - rel_z * sin_a, y, center_z + rel_x * sin_a + rel_z * cos_a
+        return center_x + rel_x * cos_a - rel_y * sin_a, center_y + rel_x * sin_a + rel_y * cos_a, z
 
     def _get_feed_mm_s(self, state: CNCState) -> float:
         feed = state.feed_rate or 1.0
