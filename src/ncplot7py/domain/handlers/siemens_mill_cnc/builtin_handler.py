@@ -35,6 +35,23 @@ class SiemensBuiltinHandler(Handler):
             scope["preprocess_stops"].append(node.nc_code_line_nr)
         elif upper.startswith("MSG"):
             state.extra.setdefault("messages", []).append({"message": command, "line": node.nc_code_line_nr})
+        elif upper.startswith("WORKPIECE"):
+            scope["workpiece"] = True
+        elif upper.startswith("NEWCONF"):
+            scope["newconf"] = True
+        elif upper.startswith("NULLPUNKT"):
+            scope["nullpunkt"] = True
+        elif upper.startswith("GETEXET"):
+            scope["getexet"] = True
+        elif upper.startswith("MCALL"):
+            scope["mcall"] = upper.replace("MCALL", "").strip() or None
+        elif upper in {"CP", "PTP", "PTPG0"}:
+            scope["axes_sync"] = upper
+        elif upper in {"FFWON", "FFWOF"}:
+            scope["feed_forward"] = upper
+        elif upper in {"DIAMON", "DIAMOF", "DIAM90"}:
+            scope["diameter_mode"] = upper
+
         if str(node.command_parameter.get("M", "")) == "82":
             scope["probe_enabled"] = True
         elif str(node.command_parameter.get("M", "")) == "83":

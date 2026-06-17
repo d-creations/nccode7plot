@@ -20,6 +20,11 @@ def ensure_siemens_scope(state: CNCState) -> Dict[str, Any]:
         "transformations": {},
         "preprocess_stops": [],
         "path_mode": None,
+        "axes_sync": "CP",
+        "feed_forward": False,
+        "diameter_mode": "DIAMOF",
+        "diameter_axes": {},
+        "workpiece": None,
     }
     for key, value in defaults.items():
         scope.setdefault(key, value.copy() if isinstance(value, dict) else list(value) if isinstance(value, list) else value)

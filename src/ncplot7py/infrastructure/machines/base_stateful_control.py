@@ -278,6 +278,7 @@ HANDLER_REGISTRY = {
     "siemens_iso_coordinate": ("ncplot7py.domain.handlers.siemens_mill_cnc.coordinate_handler", "SiemensISOCoordinateHandler"),
     "siemens_iso_inch_metric": ("ncplot7py.domain.handlers.siemens_mill_cnc.unit_handler", "SiemensISOInchMetricHandler"),
     "siemens_iso_misc": ("ncplot7py.domain.handlers.siemens_mill_cnc.misc_handler", "SiemensISOMiscHandler"),
+    "siemens_motion": ("ncplot7py.domain.handlers.siemens_mill_cnc.motion_handler", "SiemensMotionHandler"),
 }
 
 class UniversalConfigDrivenCanal(BaseStatefulCanal):

@@ -24,6 +24,8 @@ class SiemensFlowControlHandler(Handler):
         self._end_to_while: Dict[NCCommandNode, NCCommandNode] = {}
         self._if_to_else_or_end: Dict[NCCommandNode, NCCommandNode] = {}
         self._else_to_end: Dict[NCCommandNode, NCCommandNode] = {}
+        self._repeat_to_until: Dict[NCCommandNode, NCCommandNode] = {}
+        self._until_to_repeat: Dict[NCCommandNode, NCCommandNode] = {}
         self._loop_state: Dict[int, Dict[str, float | str]] = {}
         self._default_next: Dict[NCCommandNode, Optional[NCCommandNode]] = {}
         self._evaluator = SiemensExpressionEvaluator()
@@ -37,6 +39,8 @@ class SiemensFlowControlHandler(Handler):
         self._end_to_while = {}
         self._if_to_else_or_end = {}
         self._else_to_end = {}
+        self._repeat_to_until = {}
+        self._until_to_repeat = {}
         self._loop_state = {}
         self._default_next = {node: getattr(node, "_next_ncCode", None) for node in self._nodes}
 
@@ -48,6 +52,7 @@ class SiemensFlowControlHandler(Handler):
         stack: list[NCCommandNode] = []
         while_stack_by_label: Dict[str, NCCommandNode] = {}
         if_stack: list[NCCommandNode] = []
+        repeat_stack: list[NCCommandNode] = []
         for node in self._nodes:
             command = (node.loop_command or "").strip()
             upper = command.upper()
@@ -86,6 +91,12 @@ class SiemensFlowControlHandler(Handler):
                 previous = getattr(node, "_before_ncCode", None)
                 if previous and (previous.loop_command or "").upper() == "ELSE":
                     self._else_to_end[previous] = node
+            elif upper == "REPEAT":
+                repeat_stack.append(node)
+            elif upper.startswith("UNTIL") and repeat_stack:
+                start = repeat_stack.pop()
+                self._repeat_to_until[start] = node
+                self._until_to_repeat[node] = start
 
     def handle(self, node: NCCommandNode, state: CNCState) -> Tuple[Optional[list], Optional[float]]:
         scope = ensure_siemens_scope(state)
@@ -111,6 +122,10 @@ class SiemensFlowControlHandler(Handler):
             self._handle_while(node, command, state)
         elif upper.startswith("END") and upper not in {"ENDIF", "ENDFOR"}:
             self._handle_endwhile(node, state)
+        elif upper == "REPEAT":
+            pass  # enter block normally
+        elif upper.startswith("UNTIL"):
+            self._handle_until(node, command, state)
         return super().handle(node, state)
 
     def _handle_goto(self, node: NCCommandNode, command: str) -> None:
@@ -183,6 +198,17 @@ class SiemensFlowControlHandler(Handler):
         start_node = self._end_to_while.get(node)
         if start_node is not None:
             node._next_ncCode = start_node
+
+    def _handle_until(self, node: NCCommandNode, command: str, state: CNCState) -> None:
+        match = re.match(r"^UNTIL\s+(.+)$", command, re.IGNORECASE)
+        if not match:
+            return
+        condition = match.group(1).strip()
+        if not self._evaluator.is_true(condition, state):
+            # condition is false, jump back to repeat
+            start_node = self._until_to_repeat.get(node)
+            if start_node is not None:
+                node._next_ncCode = getattr(start_node, "_next_ncCode", None)
 
     def _find_matching_endif_after(self, node: NCCommandNode) -> Optional[NCCommandNode]:
         depth = 0

@@ -52,7 +52,7 @@ class NCCommandStringParser(BaseNCCommandParser):
             return True
         if re.match(r"^(FOR|ENDFOR|IF|ELSE|ENDIF|WHILE|ENDWHILE|LOOP|ENDLOOP|REPEAT|GOTOF|GOTOB|GOTO|CASE|ENDCASE)\b", upper):
             return True
-        if re.search(r"(?:^|\s)(CYCLE\d+|POCKET\d+|HOLES\d+|SLOT\d+|LONGHOLE|WORKPIECE|MCALL|MSG|SETAL|STOPRE|NEWCONF|COMPCAD|TRAORI|TRAFOOF|TRANS|ATRANS|ROT|AROT|CTRANS|CROT|FRAME|NULLPUNKT|RET|GETEXET)\b", upper):
+        if re.search(r"(?:^|\s)(CYCLE\d+|POCKET\d+|HOLES\d+|SLOT\d+|LONGHOLE|WORKPIECE|MCALL|MSG|SETAL|STOPRE|NEWCONF|COMPCAD|TRAORI|TRAFOOF|TRANS|ATRANS|ROT|AROT|CTRANS|CROT|FRAME|NULLPUNKT|RET|GETEXET|CP|PTP|PTPG0|FFWON|FFWOF|DIAMON|DIAMOF|DIAM90|G645)\b", upper):
             return True
         if re.match(r"^[A-Z_][A-Z0-9_]*:\s*$", upper):
             return True
@@ -64,7 +64,7 @@ class NCCommandStringParser(BaseNCCommandParser):
             return True
         if re.match(r"^[A-Z_][A-Z0-9_]*(?:\[[^\]]+\])?\s*=", upper) and not upper.startswith("#"):
             return True
-        if re.search(r"\b(?:LA\d+|X|Y|Z|A|B|C|F|R)\s*=\s*[A-Z_$]", upper):
+        if re.search(r"\b(?:LA\d+|X|Y|Z|A|B|C|F|R|RND|RNDM|CHR|CHF)\s*=\s*", upper):
             return True
         return False
 

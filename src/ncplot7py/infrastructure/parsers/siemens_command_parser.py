@@ -86,7 +86,7 @@ class SiemensCommandParser(BaseNCCommandParser):
         if is_siemens_anchor or is_siemens_anchor_with_text:
             return NCCommandNode(variable_command=unmask_text(siemens_statement), nc_code_line_nr=line_nr)
 
-        siemens_pattern = r"(?:\b|(?<=\d))(CYCLE\d+|POCKET\d+|HOLES\d+|SLOT\d+|LONGHOLE|WORKPIECE|MCALL|REPEAT|MSG|SETAL|STOPRE|NEWCONF|COMPCAD|TRAORI|TRAFOOF|TRANS|ATRANS|ROT|AROT|FRAME|NULLPUNKT|RET|GETEXET)\b(?:\s*\([^)]*\))?"
+        siemens_pattern = r"(?:\b|(?<=\d))(CYCLE\d+|POCKET\d+|HOLES\d+|SLOT\d+|LONGHOLE|WORKPIECE|MCALL|REPEAT|MSG|SETAL|STOPRE|NEWCONF|COMPCAD|TRAORI|TRAFOOF|TRANS|ATRANS|ROT|AROT|FRAME|NULLPUNKT|RET|GETEXET|CP|PTP|PTPG0|FFWON|FFWOF|DIAMON|DIAMOF|DIAM90)\b(?:\s*\([^)]*\))?"
         nc_line = re.sub(siemens_pattern, mask_match, nc_line, flags=re.IGNORECASE)
 
         siemens_var_pattern = r"\$[A-Za-z0-9_]+(?:\[[^\]]*\])?"
@@ -95,7 +95,7 @@ class SiemensCommandParser(BaseNCCommandParser):
         named_param_value_pattern = r"(?<==)\s*[A-Za-z_][A-Za-z0-9_]*(?:\[[^\]]*\])?"
         nc_line = re.sub(named_param_value_pattern, mask_match, nc_line, flags=re.IGNORECASE)
 
-        multi_letter_axis_param_pattern = r"\b(?:LA\d+|MEAS)\s*=\s*(?:__masked_\d+__|[^\s;]+)"
+        multi_letter_axis_param_pattern = r"\b(?:LA\d+|MEAS|RND|RNDM|CHR|CHF|RP|AP|CR|AR|I1|J1|K1|X1|Y1|Z1|X2|Y2|Z2|X3|Y3|Z3)\s*=\s*(?:__masked_\d+__|[^\s;]+)"
         nc_line = re.sub(multi_letter_axis_param_pattern, mask_match, nc_line, flags=re.IGNORECASE)
 
         label_pattern = r"\b[A-Za-z_][A-Za-z0-9_]*:"
