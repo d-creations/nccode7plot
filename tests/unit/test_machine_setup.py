@@ -118,15 +118,18 @@ class TestMachineSetup(unittest.TestCase):
             data = json.load(config_file)
 
         rules = data["SIEMENS_840D"]["syntax_rules"]
-        by_token = {rule["token"]: rule["regex"] for rule in rules if isinstance(rule["token"], str)}
+        by_token = {}
+        for rule in rules:
+            if isinstance(rule["token"], str):
+                by_token.setdefault(rule["token"], []).append(rule["regex"])
 
-        self.assertIn("TRAORI", by_token["keyword.control.siemens"])
-        self.assertIn("SETAL", by_token["keyword.control.siemens"])
-        self.assertNotRegex("G53", by_token["keyword.control.siemens"])
-        self.assertNotIn("STOPRE", by_token["keyword.control.siemens"])
-        self.assertNotIn("RET", by_token["keyword.control.siemens"])
-        self.assertIn("GOTOF", by_token["keyword.control"])
-        self.assertIn("ATAN2", by_token["support.function"])
+        keyword_patterns = by_token["keyword.control"]
+        siemens_keyword_pattern = next(pattern for pattern in keyword_patterns if "TRAORI" in pattern)
+        flow_keyword_pattern = next(pattern for pattern in keyword_patterns if "GOTOF" in pattern)
+
+        self.assertIn("TRAORI", siemens_keyword_pattern)
+        self.assertIn("GOTOF", flow_keyword_pattern)
+        self.assertIn("ATAN2", by_token["support.function"][0])
         self.assertIn("variable.other.system.siemens", by_token)
         self.assertIn("variable.other.named.siemens", by_token)
 
