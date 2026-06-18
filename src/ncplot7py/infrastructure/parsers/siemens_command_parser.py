@@ -48,7 +48,7 @@ class SiemensCommandParser(BaseNCCommandParser):
 
         siemens_statement = nc_line.strip()
         siemens_statement_upper = siemens_statement.upper()
-        named_assignment_match = re.match(r"^([A-Z_][A-Z0-9_]*(?:\[[^\]]+\])?)\s*=", siemens_statement, re.IGNORECASE)
+        named_assignment_match = re.match(r"^(?:N\d+\s*)?([A-Z_][A-Z0-9_]*(?:\[[^\]]+\])?)\s*=", siemens_statement, re.IGNORECASE)
         is_named_assignment = bool(named_assignment_match and len(named_assignment_match.group(1).split("[", 1)[0]) > 1)
         is_siemens_declaration = bool(re.match(r"^DEF\s+(INT|REAL|BOOL|CHAR|STRING(?:\[\d+\])?|AXIS|FRAME)\b", siemens_statement_upper))
         is_siemens_label = bool(re.match(r"^[A-Z_][A-Z0-9_]*:\s*$", siemens_statement_upper))
@@ -89,20 +89,26 @@ class SiemensCommandParser(BaseNCCommandParser):
         siemens_pattern = r"(?:\b|(?<=\d))(CYCLE\d+|POCKET\d+|HOLES\d+|SLOT\d+|LONGHOLE|WORKPIECE|MCALL|REPEAT|MSG|SETAL|STOPRE|NEWCONF|COMPCAD|TRAORI|TRAFOOF|TRANS|ATRANS|ROT|AROT|FRAME|NULLPUNKT|RET|GETEXET|CP|PTP|PTPG0|FFWON|FFWOF|DIAMON|DIAMOF|DIAM90)\b(?:\s*\([^)]*\))?"
         nc_line = re.sub(siemens_pattern, mask_match, nc_line, flags=re.IGNORECASE)
 
+        # Mask innermost parentheses first to protect spaces inside math
+        prev_line = None
+        while prev_line != nc_line:
+            prev_line = nc_line
+            nc_line = re.sub(r"\([^()]*\)", mask_match, nc_line)
+
         siemens_var_pattern = r"\$[A-Za-z0-9_]+(?:\[[^\]]*\])?"
         nc_line = re.sub(siemens_var_pattern, mask_match, nc_line, flags=re.IGNORECASE)
 
-        named_param_value_pattern = r"(?<==)\s*[A-Za-z_][A-Za-z0-9_]*(?:\[[^\]]*\])?"
+        named_param_value_pattern = r"(?<=[=\+\-\*\/\[\(,])\s*(?!__masked_)[A-Za-z_][A-Za-z0-9_]*(?:\[[^\]]*\])?"
         nc_line = re.sub(named_param_value_pattern, mask_match, nc_line, flags=re.IGNORECASE)
 
-        multi_letter_axis_param_pattern = r"\b(?:LA\d+|MEAS|RND|RNDM|CHR|CHF|RP|AP|CR|AR|I1|J1|K1|X1|Y1|Z1|X2|Y2|Z2|X3|Y3|Z3)\s*=\s*(?:__masked_\d+__|[^\s;]+)"
+        multi_letter_axis_param_pattern = r"(?:^|\b|(?<=__))(?:LA\d+|MEAS|RND|RNDM|CHR|CHF|RP|AP|CR|AR|I1|J1|K1|X1|Y1|Z1|X2|Y2|Z2|X3|Y3|Z3)\s*=\s*(?:__masked_\d+__|[^\s;]+)"
         nc_line = re.sub(multi_letter_axis_param_pattern, mask_match, nc_line, flags=re.IGNORECASE)
 
         label_pattern = r"\b[A-Za-z_][A-Za-z0-9_]*:"
         nc_line = re.sub(label_pattern, mask_match, nc_line, flags=re.IGNORECASE)
 
         nc_line = re.sub(siemens_pattern, mask_match, nc_line, flags=re.IGNORECASE)
-        nc_line = re.sub(r"\([^)]*\)", mask_match, nc_line)
+
         nc_line = re.sub(" ", "", nc_line)
         if nc_line.startswith('/'):
             nc_line = nc_line[1:]

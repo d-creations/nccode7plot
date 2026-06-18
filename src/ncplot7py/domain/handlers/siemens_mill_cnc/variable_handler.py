@@ -86,7 +86,10 @@ class SiemensExpressionEvaluator:
         if "=" in value:
             # Safely handle both "=EXPR" and buggy "A=EXPR" from parser overlaps
             _, expr = value.split("=", 1)
-            return format_number(self.evaluate(expr, state))
+            try:
+                return format_number(self.evaluate(expr, state))
+            except Exception:
+                return expr
         try:
             return format_number(self.evaluate(value, state))
         except Exception:
