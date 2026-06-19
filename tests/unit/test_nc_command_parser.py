@@ -177,5 +177,21 @@ class TestNCCommandParser(unittest.TestCase):
         self.assertEqual(siemens_node.variable_command, "DEF REAL CUSTOM_MC[30]")
         self.assertEqual(siemens_node.command_parameter, {})
 
+    def test_siemens_math_assignment_and_multi_letter_axis(self):
+        siemens_parser = NCCommandStringParser(parser_name="siemens")
+        
+        node1 = siemens_parser.parse("DEF REAL ENDZ")
+        self.assertEqual(node1.variable_command, "DEF REAL ENDZ")
+        self.assertEqual(node1.command_parameter, {})
+        
+        node2 = siemens_parser.parse("ENDZ = ENDZ + ENDZ2")
+        self.assertEqual(node2.variable_command, "ENDZ = ENDZ + ENDZ2")
+        self.assertEqual(node2.command_parameter, {})
+        
+        node3 = siemens_parser.parse("G1 X10 LA1=ENDZ")
+        self.assertIn("G1", node3.g_code)
+        self.assertEqual(node3.command_parameter.get("X"), "10")
+        self.assertEqual(node3.command_parameter.get("LA1"), "=ENDZ")
+
 if __name__ == "__main__":
     unittest.main()

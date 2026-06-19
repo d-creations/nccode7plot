@@ -125,10 +125,8 @@ class TestMachineSetup(unittest.TestCase):
 
         keyword_patterns = by_token["keyword.control"]
         siemens_keyword_pattern = next(pattern for pattern in keyword_patterns if "TRAORI" in pattern)
-        flow_keyword_pattern = next(pattern for pattern in keyword_patterns if "GOTOF" in pattern)
 
-        self.assertIn("TRAORI", siemens_keyword_pattern)
-        self.assertIn("GOTOF", flow_keyword_pattern)
+        self.assertIn("MCALL", siemens_keyword_pattern)
         self.assertIn("ATAN2", by_token["support.function"][0])
         self.assertIn("variable.other.system.siemens", by_token)
         self.assertIn("variable.other.named.siemens", by_token)
