@@ -49,7 +49,9 @@ class SiemensCommandParser(BaseNCCommandParser):
         siemens_statement = nc_line.strip()
         siemens_statement_upper = siemens_statement.upper()
         named_assignment_match = re.match(r"^(?:N\d+\s*)?([A-Z_][A-Z0-9_]*(?:\[[^\]]+\])?)\s*=", siemens_statement, re.IGNORECASE)
-        is_named_assignment = bool(named_assignment_match and len(named_assignment_match.group(1).split("[", 1)[0]) > 1)
+        named_assignment_target = named_assignment_match.group(1).split("[", 1)[0].upper() if named_assignment_match else ""
+        is_multi_letter_axis_assignment = bool(re.match(r"^(?:LA\d+|MEAS|RND|RNDM|CHR|CHF|RP|AP|CR|AR|I1|J1|K1|X1|Y1|Z1|X2|Y2|Z2|X3|Y3|Z3)$", named_assignment_target))
+        is_named_assignment = bool(named_assignment_match and len(named_assignment_target) > 1 and not is_multi_letter_axis_assignment)
         is_siemens_declaration = bool(re.match(r"^DEF\s+(INT|REAL|BOOL|CHAR|STRING(?:\[\d+\])?|AXIS|FRAME)\b", siemens_statement_upper))
         is_siemens_label = bool(re.match(r"^[A-Z_][A-Z0-9_]*:\s*$", siemens_statement_upper))
         is_siemens_control = bool(re.match(r"^(FOR|ENDFOR|IF|ELSE|ENDIF|WHILE|ENDWHILE|LOOP|ENDLOOP|REPEAT|GOTOF|GOTOB|GOTO|CASE|ENDCASE)\b", siemens_statement_upper))

@@ -193,5 +193,10 @@ class TestNCCommandParser(unittest.TestCase):
         self.assertEqual(node3.command_parameter.get("X"), "10")
         self.assertEqual(node3.command_parameter.get("LA1"), "=ENDZ")
 
+        node4 = siemens_parser.parse("LA1=(R75 + Y_POS) Y=Y_POS RND = ECK_RND")
+        self.assertEqual(node4.command_parameter.get("LA1"), "=(R75 + Y_POS)")
+        self.assertEqual(node4.command_parameter.get("Y"), "=Y_POS")
+        self.assertEqual(node4.variable_command, "RND = ECK_RND")
+
 if __name__ == "__main__":
     unittest.main()

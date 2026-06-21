@@ -67,7 +67,7 @@ def sanitize_program(program: str) -> str:
 
     def sanitize_subcmd(sub: str) -> str:
         parts = [p for p in sub.strip().split() if p != ""]
-        axis_re = re.compile(r'^([XYZIJKxyzijk])')
+        axis_re = re.compile(r'^([XYZIJKxyzijk])(?=[+-]?\d|=)')
         last_axis = {}
         others = []
         # record last index for axis tokens and keep others with position

@@ -70,6 +70,35 @@ class TestCgiServerConversion(unittest.TestCase):
         self.assertAlmostEqual(canal["namedVariables"]["CUSTOM_MC[3]"], 12.5)
         self.assertAlmostEqual(canal["namedVariables"]["ANGLE_Z"], 36.869897, places=5)
 
+    def test_siemens_cgi_preserves_named_variables_in_axis_expressions(self):
+        cgiserver = _load_cgiserver_module()
+        for axis_line in ["Y=Y_POS LA1=(R75 + Y_POS) RND = ECK_RND", "LA1=(R75 + Y_POS) Y=Y_POS RND = ECK_RND"]:
+            with self.subTest(axis_line=axis_line):
+                program = "\n".join(
+                    [
+                        "DEF REAL Y_POS = 640",
+                        "DEF REAL ECK_RND = 12",
+                        "R75 = -525",
+                        axis_line,
+                        "G1 X10",
+                    ]
+                )
+
+                result = cgiserver.handle_execute_programs(
+                    [
+                        {
+                            "program": program,
+                            "machineName": "SIEMENS_840D",
+                            "canalNr": "1",
+                        }
+                    ]
+                )
+
+                self.assertIsNone(result.get("errors"))
+                canal = result["canal"]["1"]
+                self.assertAlmostEqual(canal["namedVariables"]["RND"], 12.0)
+                self.assertIn(5, canal["executedNodeLines"])
+
 
 if __name__ == "__main__":
     unittest.main()
