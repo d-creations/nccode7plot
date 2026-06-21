@@ -19,7 +19,7 @@ class TestRefactoringVerification(unittest.TestCase):
 
     def test_siemens_variables_and_tools(self):
         """Test Siemens 840D: R-parameters and Tool Range (0-9999)."""
-        control = UniversalConfigDrivenControl(init_nc_states=[CNCState(machine_config=get_machine_config("SIEMENS_840D"))])
+        control = UniversalConfigDrivenControl(init_nc_states=[CNCState(machine_config=get_machine_config("SIEMENS_840DI"))])
         
         # 1. Valid R-parameter and Valid Tool
         code_valid = """

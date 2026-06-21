@@ -12,10 +12,10 @@ def fanuc_config():
 
 @pytest.fixture
 def siemens_config():
-    config = get_machine_config("SIEMENS_840D")
+    config = get_machine_config("SIEMENS_840DI")
     if not config:
         config = MachineConfig(
-            name="SIEMENS_840D", control_type="SIEMENS",
+            name="SIEMENS_840DI", control_type="SIEMENS",
             variable_pattern="R(\\d+)", variable_prefix="R", tool_range=(0, 9999)
         )
     config.cycle_start_code = "START:"

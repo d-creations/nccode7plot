@@ -6,7 +6,7 @@ from ncplot7py.infrastructure.parsers.nc_command_parser import NCCommandStringPa
 from ncplot7py.shared.point import Point
 
 def test_cycle81_execution():
-    canal = UniversalConfigDrivenCanal("TestCanal", init_state=CNCState(machine_config=get_machine_config("SIEMENS_840D")))
+    canal = UniversalConfigDrivenCanal("TestCanal", init_state=CNCState(machine_config=get_machine_config("SIEMENS_840DI")))
     parser = NCCommandStringParser()
     
     code = """

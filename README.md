@@ -30,7 +30,7 @@ G1 X50 Y0 F300
 M30
 """
 
-state = CNCState(machine_config=get_machine_config("SIEMENS_840D"))
+state = CNCState(machine_config=get_machine_config("SIEMENS_840DI"))
 control = UniversalConfigDrivenControl(init_nc_states=[state])
 engine = NCExecutionEngine(control)
 
@@ -45,7 +45,7 @@ See the scripts in `scripts/` for runnable examples.
 
 The default machine configurations are defined in `src/ncplot7py/config/machines.json` and include:
 
-- `SIEMENS_840D` - Siemens milling control
+- `SIEMENS_840DI` - Siemens milling control
 - `FANUC_MILL` - FANUC milling control
 - `FANUC_TURN` - FANUC turning control
 - `FANUC_STAR_x-D_y-R_z_R` - FANUC turn/mill Swiss-style control
@@ -72,7 +72,7 @@ and program execution requests such as:
   "machinedata": [
     {
       "program": "G90 G54\nG0 X0 Y0 Z10\nG1 X50 Y0 F300\nM30",
-      "machineName": "SIEMENS_840D",
+      "machineName": "SIEMENS_840DI",
       "canalNr": "channel-1"
     }
   ]

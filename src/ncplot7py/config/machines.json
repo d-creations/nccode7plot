@@ -358,7 +358,7 @@
     ],
     "max_execution_nodes": 50000
   },
-  "SIEMENS_840D": {
+  "SIEMENS_840DI": {
     "name": "SIEMENS_840DI",
     "control_type": "SIEMENS",
     "parser_name": "siemens",

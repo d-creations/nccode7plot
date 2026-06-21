@@ -9,7 +9,7 @@ from ncplot7py.infrastructure.parsers.siemens_command_parser import SiemensComma
 def _run_siemens_program(lines):
     parser = SiemensCommandParser()
     nodes = [parser.parse(line, line_number) for line_number, line in enumerate(lines, start=1)]
-    state = CNCState(machine_config=get_machine_config("SIEMENS_840D"))
+    state = CNCState(machine_config=get_machine_config("SIEMENS_840DI"))
     control = UniversalConfigDrivenControl(init_nc_states=[state])
 
     control.run_nc_code_list(nodes, 1)

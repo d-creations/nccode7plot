@@ -99,7 +99,7 @@ class TestMachineSetup(unittest.TestCase):
         )
 
     def test_siemens_frontend_regex_patterns_include_advanced_commands_and_variables(self):
-        patterns = get_machine_regex_patterns("SIEMENS_840D")
+        patterns = get_machine_regex_patterns("SIEMENS_840DI")
 
         keyword_pattern = patterns["keywords"]["pattern"]
         for keyword in ["G64", "G53", "G54", "TRAORI", "TRAFOOF", "SETAL", "SPOS", "RET"]:
@@ -117,7 +117,7 @@ class TestMachineSetup(unittest.TestCase):
         with open(config_path, "r", encoding="utf-8") as config_file:
             data = json.load(config_file)
 
-        rules = data["SIEMENS_840D"]["syntax_rules"]
+        rules = data["SIEMENS_840DI"]["syntax_rules"]
         by_token = {}
         for rule in rules:
             if isinstance(rule["token"], str):
@@ -134,7 +134,7 @@ class TestMachineSetup(unittest.TestCase):
     def test_machine_configs_expose_parser_name_by_control_family(self):
         self.assertEqual(get_machine_config("FANUC_MILL").parser_name, "fanuc")
         self.assertEqual(get_machine_config("FANUC_TURN").parser_name, "fanuc")
-        self.assertEqual(get_machine_config("SIEMENS_840D").parser_name, "siemens")
+        self.assertEqual(get_machine_config("SIEMENS_840DI").parser_name, "siemens")
 
 
 if __name__ == '__main__':

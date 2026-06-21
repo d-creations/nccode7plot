@@ -61,10 +61,10 @@ class TestCycleEndIntegration(unittest.TestCase):
         G0 X30  (Should not be reached)
         """
         
-        config = get_machine_config("SIEMENS_840D")
+        config = get_machine_config("SIEMENS_840DI")
         if not config or config.name == "FANUC_GENERIC":
             config = MachineConfig(
-                name="SIEMENS_840D", control_type="SIEMENS",
+                name="SIEMENS_840DI", control_type="SIEMENS",
                 variable_pattern="R(\\d+)", variable_prefix="R", tool_range=(0, 9999)
             )
         config.cycle_start_code = "START:"

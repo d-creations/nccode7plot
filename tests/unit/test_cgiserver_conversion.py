@@ -59,7 +59,7 @@ class TestCgiServerConversion(unittest.TestCase):
             [
                 {
                     "program": "DEF REAL CUSTOM_MC[4]\nCUSTOM_MC[3]=12.5\nANGLE_Z=ATAN2(30,40)",
-                    "machineName": "SIEMENS_840D",
+                    "machineName": "SIEMENS_840DI",
                     "canalNr": "1",
                 }
             ]

@@ -5,7 +5,7 @@ from ncplot7py.domain.cnc_state import CNCState
 from ncplot7py.infrastructure.parsers.nc_command_parser import NCCommandStringParser
 
 def test_holes1_execution():
-    canal = UniversalConfigDrivenCanal("TestCanal", init_state=CNCState(machine_config=get_machine_config("SIEMENS_840D")))
+    canal = UniversalConfigDrivenCanal("TestCanal", init_state=CNCState(machine_config=get_machine_config("SIEMENS_840DI")))
     parser = NCCommandStringParser()
     
     code = """

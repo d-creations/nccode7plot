@@ -27,7 +27,7 @@ class NCParser:
 
 class TestSiemensMill(unittest.TestCase):
     def setUp(self):
-        self.control = UniversalConfigDrivenControl(count_of_canals=1, init_nc_states=[CNCState(machine_config=get_machine_config("SIEMENS_840D"))])
+        self.control = UniversalConfigDrivenControl(count_of_canals=1, init_nc_states=[CNCState(machine_config=get_machine_config("SIEMENS_840DI"))])
         self.parser = NCParser()
 
     def test_simple_motion(self):

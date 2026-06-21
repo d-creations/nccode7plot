@@ -25,7 +25,7 @@ class NCParser:
 
 class TestSiemensAdvancedProgrammingIntegration(unittest.TestCase):
     def setUp(self):
-        state = CNCState(machine_config=get_machine_config("SIEMENS_840D"))
+        state = CNCState(machine_config=get_machine_config("SIEMENS_840DI"))
         self.control = UniversalConfigDrivenControl(count_of_canals=1, init_nc_states=[state])
         self.parser = NCParser()
 
@@ -95,7 +95,7 @@ class TestSiemensAdvancedProgrammingIntegration(unittest.TestCase):
         self.assertFalse(any(abs(point.x - 999.0) < 0.001 for point in visited_points))
 
     def test_execution_output_exposes_named_variables_and_arrays(self):
-        state = CNCState(machine_config=get_machine_config("SIEMENS_840D"))
+        state = CNCState(machine_config=get_machine_config("SIEMENS_840DI"))
         control = UniversalConfigDrivenControl(count_of_canals=1, init_nc_states=[state])
         engine = NCExecutionEngine(control)
 

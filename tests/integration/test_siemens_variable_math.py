@@ -20,7 +20,7 @@ G1 Z=Z_POS
 """
         ctrl = UniversalConfigDrivenControl(
             count_of_canals=1, 
-            init_nc_states=[CNCState(machine_config=get_machine_config('SIEMENS_840D'))] # ensure matching case from test or just SIEMENS_840D
+            init_nc_states=[CNCState(machine_config=get_machine_config('SIEMENS_840DI'))] # ensure matching case from test or just SIEMENS_840DI
         )
         engine = NCExecutionEngine(ctrl)
         result = engine.get_Syncro_plot([program], False)

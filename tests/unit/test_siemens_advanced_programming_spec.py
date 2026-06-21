@@ -26,7 +26,7 @@ class TestSiemensAdvancedProgrammingSpec(unittest.TestCase):
         for handler_name in expected_handlers:
             self.assertIn(handler_name, HANDLER_REGISTRY)
 
-        config = get_machine_config("SIEMENS_840D")
+        config = get_machine_config("SIEMENS_840DI")
         groups = list(config.supported_gcode_groups)
 
         for handler_name in expected_handlers:
@@ -39,7 +39,7 @@ class TestSiemensAdvancedProgrammingSpec(unittest.TestCase):
     def test_variable_handler_defines_arrays_and_named_assignments(self):
         from ncplot7py.domain.handlers.siemens_mill_cnc.variable_handler import SiemensVariableHandler
 
-        state = CNCState(machine_config=get_machine_config("SIEMENS_840D"))
+        state = CNCState(machine_config=get_machine_config("SIEMENS_840DI"))
         handler = SiemensVariableHandler()
 
         handler.handle(NCCommandNode(variable_command="DEF REAL CUSTOM_MC[30]"), state)
@@ -57,7 +57,7 @@ class TestSiemensAdvancedProgrammingSpec(unittest.TestCase):
     def test_flow_control_gotof_jumps_to_named_label(self):
         from ncplot7py.domain.handlers.siemens_mill_cnc.flow_control_handler import SiemensFlowControlHandler
 
-        state = CNCState(machine_config=get_machine_config("SIEMENS_840D"))
+        state = CNCState(machine_config=get_machine_config("SIEMENS_840DI"))
         handler = SiemensFlowControlHandler()
 
         node_jump = NCCommandNode(loop_command="GOTOFQUADRANT_00", nc_code_line_nr=1)
@@ -79,7 +79,7 @@ class TestSiemensAdvancedProgrammingSpec(unittest.TestCase):
         from ncplot7py.domain.handlers.siemens_mill_cnc.flow_control_handler import SiemensFlowControlHandler
         from ncplot7py.domain.handlers.siemens_mill_cnc.variable_handler import SiemensVariableHandler
 
-        state = CNCState(machine_config=get_machine_config("SIEMENS_840D"))
+        state = CNCState(machine_config=get_machine_config("SIEMENS_840DI"))
         variable_handler = SiemensVariableHandler()
         flow_handler = SiemensFlowControlHandler()
 
@@ -105,7 +105,7 @@ class TestSiemensAdvancedProgrammingSpec(unittest.TestCase):
     def test_frame_handler_stores_chained_uifr_frame(self):
         from ncplot7py.domain.handlers.siemens_mill_cnc.frame_handler import SiemensFrameHandler
 
-        state = CNCState(machine_config=get_machine_config("SIEMENS_840D"))
+        state = CNCState(machine_config=get_machine_config("SIEMENS_840DI"))
         handler = SiemensFrameHandler()
 
         state.extra["siemens"] = {
@@ -138,7 +138,7 @@ class TestSiemensAdvancedProgrammingSpec(unittest.TestCase):
     def test_builtin_handler_records_setal_spos_and_ret(self):
         from ncplot7py.domain.handlers.siemens_mill_cnc.builtin_handler import SiemensBuiltinHandler
 
-        state = CNCState(machine_config=get_machine_config("SIEMENS_840D"))
+        state = CNCState(machine_config=get_machine_config("SIEMENS_840DI"))
         handler = SiemensBuiltinHandler()
 
         handler.handle(NCCommandNode(variable_command="SETAL(62111)", nc_code_line_nr=22), state)
@@ -153,7 +153,7 @@ class TestSiemensAdvancedProgrammingSpec(unittest.TestCase):
     def test_transformation_handler_toggles_traori_trafoof(self):
         from ncplot7py.domain.handlers.siemens_mill_cnc.transformation_handler import SiemensTransformationHandler
 
-        state = CNCState(machine_config=get_machine_config("SIEMENS_840D"))
+        state = CNCState(machine_config=get_machine_config("SIEMENS_840DI"))
         handler = SiemensTransformationHandler()
 
         handler.handle(NCCommandNode(variable_command="TRAORI"), state)
@@ -165,7 +165,7 @@ class TestSiemensAdvancedProgrammingSpec(unittest.TestCase):
     def test_path_mode_handler_records_g64(self):
         from ncplot7py.domain.handlers.siemens_mill_cnc.path_mode_handler import SiemensPathModeHandler
 
-        state = CNCState(machine_config=get_machine_config("SIEMENS_840D"))
+        state = CNCState(machine_config=get_machine_config("SIEMENS_840DI"))
         handler = SiemensPathModeHandler()
 
         handler.handle(NCCommandNode(g_code_command={"G64"}), state)
@@ -175,7 +175,7 @@ class TestSiemensAdvancedProgrammingSpec(unittest.TestCase):
     def test_coordinate_handler_activates_g54_and_bypasses_with_g53(self):
         from ncplot7py.domain.handlers.siemens_mill_cnc.coordinate_handler import SiemensISOCoordinateHandler
 
-        state = CNCState(machine_config=get_machine_config("SIEMENS_840D"))
+        state = CNCState(machine_config=get_machine_config("SIEMENS_840DI"))
         state.extra["siemens"] = {
             "symbols": {},
             "types": {},

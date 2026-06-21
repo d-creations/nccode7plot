@@ -34,7 +34,7 @@ These are defined dynamically in `ncplot7py/config/machines.json`. Common defaul
 - FANUC_STAR_x-D_y-D_z_R
 - FANUC_TURN
 - FANUC_MILL
-- SIEMENS_840D
+- SIEMENS_840DI
 
 ## Bring Your Own Config (BYOC)
 Instead of relying strictly on server-defined defaults, clients can dynamically configure the execution parameters by sending a `customMachineConfig` object within the request. If provided, these values override the settings derived from `machineName`. Example properties (all optional):
@@ -165,7 +165,7 @@ Response JSON body:
 {
   "machines": [
     { "machineName": "FANUC_STAR", "controlType": "FANUC_STAR" },
-    { "machineName": "SIEMENS_840D", "controlType": "SIEMENS_840D" },
+    { "machineName": "SIEMENS_840DI", "controlType": "SIEMENS_840DI" },
     ...
   ]
 }

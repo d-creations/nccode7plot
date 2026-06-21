@@ -20,7 +20,7 @@ def test_siemens_cycle801():
     N40 M30
     """
     
-    canal = UniversalConfigDrivenCanal("TestMill", init_state=CNCState(machine_config=get_machine_config("SIEMENS_840D")))
+    canal = UniversalConfigDrivenCanal("TestMill", init_state=CNCState(machine_config=get_machine_config("SIEMENS_840DI")))
     parser = NCCommandStringParser()
     
     nodes = []
