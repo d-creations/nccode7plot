@@ -33,7 +33,7 @@ class SiemensCommandParser(BaseNCCommandParser):
             return token
 
         def unmask_text(text: str) -> str:
-            for key, value in masked_map.items():
+            for key, value in reversed(list(masked_map.items())):
                 text = text.replace(key, value)
             return text
 
@@ -140,7 +140,7 @@ class SiemensCommandParser(BaseNCCommandParser):
 
             if code.startswith("__masked_"):
                 original = masked_map.get(code, code)
-                for key, value in masked_map.items():
+                for key, value in reversed(list(masked_map.items())):
                     if key in original:
                         original = original.replace(key, value)
 
@@ -156,7 +156,7 @@ class SiemensCommandParser(BaseNCCommandParser):
                 continue
 
             if "__masked_" in code:
-                for key, value in masked_map.items():
+                for key, value in reversed(list(masked_map.items())):
                     if key in code:
                         code = code.replace(key, value)
 
@@ -168,7 +168,7 @@ class SiemensCommandParser(BaseNCCommandParser):
                 g_code_set.add(code)
             elif code.startswith('#'):
                 var_calculation_str = nc_line
-                for key, value in masked_map.items():
+                for key, value in reversed(list(masked_map.items())):
                     var_calculation_str = var_calculation_str.replace(key, value)
 
                 if g_code_set or axis_coordinate_dict:
