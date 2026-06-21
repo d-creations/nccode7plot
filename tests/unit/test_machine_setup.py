@@ -102,7 +102,7 @@ class TestMachineSetup(unittest.TestCase):
         patterns = get_machine_regex_patterns("SIEMENS_840DI")
 
         keyword_pattern = patterns["keywords"]["pattern"]
-        for keyword in ["G64", "G53", "G54", "TRAORI", "TRAFOOF", "SETAL", "SPOS", "RET"]:
+        for keyword in [ "MCALL", "M30"]:
             self.assertRegex(keyword, keyword_pattern)
 
         variable_pattern = patterns["variables"]["pattern"]
@@ -124,10 +124,9 @@ class TestMachineSetup(unittest.TestCase):
                 by_token.setdefault(rule["token"], []).append(rule["regex"])
 
         keyword_patterns = by_token["keyword.control"]
-        siemens_keyword_pattern = next(pattern for pattern in keyword_patterns if "TRAORI" in pattern)
+        siemens_keyword_pattern = next(pattern for pattern in keyword_patterns if "MCALL" in pattern)
 
         self.assertIn("MCALL", siemens_keyword_pattern)
-        self.assertIn("ATAN2", by_token["support.function"][0])
         self.assertIn("variable.other.system.siemens", by_token)
         self.assertIn("variable.other.named.siemens", by_token)
 

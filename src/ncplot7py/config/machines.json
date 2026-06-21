@@ -421,7 +421,7 @@
       },
       {
         "token": "keyword.control",
-        "regex": "T=\"[^\"]+\"|(?:CYCLE|POCKET|HOLES|SLOT)\\d+|LONGHOLE|WORKPIECE|NULLPUNKT|GETEXET|CP|PTP|PTPG0|FFWON|FFWOF|DIAMON|DIAMOF|DIAM90|COMPCAD|MCALL|M30|M17|MSG|SETAL|NEWCONF|TRAORI|TRAFOOF|TRANS|ATRANS|ROT|AROT|CTRANS|CROT|SPOS|G64[0-5]?|G5[4-9]"
+        "regex": "T=\"[^\"]+\"|(?:CYCLE|POCKET|HOLES|SLOT)\\d+|LONGHOLE|WORKPIECE|MCALL|M30|"
       },
       {
         "token": "support.function",
@@ -437,7 +437,7 @@
       },
       {
         "token": "keyword.operator",
-        "regex": "<>|==|>=|<=|[\\+\\-\\*\\/=<>:]|\\b(?:AND|OR|NOT|XOR|DIV|MOD|B_AND|B_OR|B_NOT|B_XOR)\\b"
+        "regex": "<>|==|>=|<=|[\\+\\-\\*\\/=<>:]|\\b(?:M30|OR|NOT|XOR|DIV|MOD|B_AND|B_OR|B_NOT|B_XOR)\\b"
       },
       {
         "token": "variable.parameter",
