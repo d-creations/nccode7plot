@@ -88,7 +88,27 @@
         "regex": "([A-Z])(\\s*[+-]?\\d+(?:\\.\\d+)?)"
       }
     ],
-    "max_execution_nodes": 50000
+    "max_execution_nodes": 50000,
+    "file_extensions": {
+      "multifile": true,
+      "main": [
+        ".PA",
+        ".txt"
+      ],
+      "subprogram": [],
+      "channels": {
+        "1": [
+          ".PA",
+          ".P1"
+        ],
+        "2": [
+          ".P2"
+        ],
+        "3": [
+          ".P3"
+        ]
+      }
+    }
   },
   "FANUC_STAR_x-D_y-D_z_R": {
     "name": "FANUC_STAR_x-D_y-D_z_R",
@@ -180,7 +200,27 @@
         "regex": "([A-Z])(\\s*[+-]?\\d+(?:\\.\\d+)?)"
       }
     ],
-    "max_execution_nodes": 50000
+    "max_execution_nodes": 50000,
+    "file_extensions": {
+      "multifile": true,
+      "main": [
+        ".PA",
+        ".txt"
+      ],
+      "subprogram": [],
+      "channels": {
+        "1": [
+          ".PA",
+          ".P1"
+        ],
+        "2": [
+          ".P2"
+        ],
+        "3": [
+          ".P3"
+        ]
+      }
+    }
   },
   "FANUC_TURN": {
     "name": "FANUC_TURN",
@@ -269,7 +309,30 @@
         "regex": "([A-Z])(\\s*[+-]?\\d+(?:\\.\\d+)?)"
       }
     ],
-    "max_execution_nodes": 50000
+    "max_execution_nodes": 50000,
+    "file_extensions": {
+      "multifile": true,
+      "main": [
+        ".PA",
+        ".txt",
+        ""
+      ],
+      "subprogram": [],
+      "channels": {
+        "1": [
+          ".PA",
+          ""
+        ],
+        "2": [
+          ".p-2",
+          ".P-2"
+        ],
+        "3": [
+          ".p-3",
+          ".P-3"
+        ]
+      }
+    }
   },
   "FANUC_MILL": {
     "name": "FANUC_MILL",
@@ -356,7 +419,30 @@
         "regex": "([A-Z])(\\s*[+-]?\\d+(?:\\.\\d+)?)"
       }
     ],
-    "max_execution_nodes": 50000
+    "max_execution_nodes": 50000,
+    "file_extensions": {
+      "multifile": true,
+      "main": [
+        ".PA",
+        ".txt",
+        ""
+      ],
+      "subprogram": [],
+      "channels": {
+        "1": [
+          ".PA",
+          ""
+        ],
+        "2": [
+          ".p-2",
+          ".P-2"
+        ],
+        "3": [
+          ".p-3",
+          ".P-3"
+        ]
+      }
+    }
   },
   "SIEMENS_840DI": {
     "name": "SIEMENS_840DI",
@@ -460,7 +546,19 @@
         "regex": "([A-Z])(\\s*[+-]?\\d+(?:\\.\\d+)?)"
       }
     ],
-    "max_execution_nodes": 50000
+    "max_execution_nodes": 50000,
+    "file_extensions": {
+      "multifile": false,
+      "main": [
+        ".MPF",
+        ".mpf"
+      ],
+      "subprogram": [
+        ".SPF",
+        ".spf"
+      ],
+      "channels": {}
+    }
   },
   "SIEMENS_840D": "SIEMENS_840DI"
 }

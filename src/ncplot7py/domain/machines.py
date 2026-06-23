@@ -33,6 +33,7 @@ class MachineConfig:
     seventh_axis_name: Optional[str] = None
     seventh_axis_maps_to: Optional[str] = None
     max_execution_nodes: int = 100000
+    file_extensions: Dict[str, Any] = field(default_factory=dict)
 
 
 FANUC_GENERIC_CONFIG = MachineConfig(
@@ -92,7 +93,8 @@ def load_machine_configs():
                     rotary_axis_planes=dict(val.get('rotary_axis_planes', {"A": "YZ", "B": "XZ", "C": "XY"})),
                     seventh_axis_name=val.get('seventh_axis_name'),
                     seventh_axis_maps_to=val.get('seventh_axis_maps_to'),
-                    max_execution_nodes=val.get('max_execution_nodes', 100000)
+                    max_execution_nodes=val.get('max_execution_nodes', 100000),
+                    file_extensions=val.get('file_extensions', {})
                 )
                 
         # Second pass: resolve aliases

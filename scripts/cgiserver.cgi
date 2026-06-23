@@ -268,6 +268,7 @@ def handle_list_machines() -> Dict[str, Any]:
             machine["regexPatterns"] = get_machine_regex_patterns(machine["controlType"])
         config = get_machine_config(machine["machineName"])
         machine["variablePrefix"] = config.variable_prefix
+        machine["fileExtensions"] = config.file_extensions
 
     return {
         "machines": machines,
