@@ -34,3 +34,32 @@ G1 Z=Z_POS
         
         self.assertEqual(symbols.get("ENDZ"), 15.0)
         self.assertEqual(symbols.get("Z_POS"), -1.5)
+
+    def test_siemens_for_loop_uses_named_end_value(self):
+        program = """
+DEF REAL INCPOSZ = 5
+DEF REAL ZPOS = 5
+DEF INT ENDVAR = 2
+G1 Z=ZPOS
+For iSteps=1 to ENDVAR
+G1 X=INCPOSZ + ZPOS
+ENDFOR ;
+"""
+        ctrl = UniversalConfigDrivenControl(
+            count_of_canals=1,
+            init_nc_states=[CNCState(machine_config=get_machine_config("SIEMENS_840DI"))],
+        )
+        engine = NCExecutionEngine(ctrl)
+        result = engine.get_Syncro_plot([program], False)
+
+        self.assertEqual(len(engine.errors), 0, f"Execution completed with errors: {engine.errors}")
+
+        self.assertEqual(result[0]["programExec"].count(7), 2)
+
+        state = ctrl.get_nc_state(1)
+        self.assertEqual(state.axes.get("Z"), 5.0)
+        self.assertEqual(state.axes.get("X"), 10.0)
+
+        symbols = state.extra.get("siemens", {}).get("symbols", {})
+        self.assertEqual(symbols.get("ENDVAR"), 2)
+        self.assertEqual(symbols.get("iSteps"), 3)

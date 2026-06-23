@@ -225,7 +225,7 @@ class TestSiemens5AxisComplex(unittest.TestCase):
         G2 X50 Y70 R=R10
         
         ; Cancel Comp
-        G40 X0 Y70
+        G1 G40 X0 Y70
         
         M30
         """

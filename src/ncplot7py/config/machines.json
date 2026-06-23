@@ -384,6 +384,7 @@
       "siemens_iso_coordinate",
       "siemens_iso_inch_metric",
       "siemens_iso_misc",
+      "modal",
       "cycle_end",
       "siemens_motion",
       "motion"

@@ -106,5 +106,27 @@ class TestSiemensMill(unittest.TestCase):
         self.assertAlmostEqual(last_pt.x, 0.0, places=3)
         self.assertAlmostEqual(last_pt.y, 10.0, places=3)
 
+    def test_modal_motion_siemens(self):
+        code = """
+        G17 G90 G94
+        G0 X0 Y0 Z10
+        G1 X10 F100
+        Y10
+        X20
+        """
+        nodes = self.parser.parse(code)
+        self.control.run_nc_code_list(nodes, 1)
+        path = self.control.get_tool_path(1)
+        
+        # Check path points
+        last_seg = path[-1][0]
+        last_pt = last_seg[-1]
+        self.assertAlmostEqual(last_pt.x, 20.0)
+        self.assertAlmostEqual(last_pt.y, 10.0)
+        self.assertAlmostEqual(last_pt.z, 10.0)
+        
+        # Verify that we had motion segments
+        self.assertTrue(len(path) > 1, "Should have generated motion segments for the modal moves")
+
 if __name__ == '__main__':
     unittest.main()
