@@ -98,7 +98,6 @@
       "subprogram": [],
       "channels": {
         "1": [
-          ".PA",
           ".P1"
         ],
         "2": [
@@ -210,7 +209,6 @@
       "subprogram": [],
       "channels": {
         "1": [
-          ".PA",
           ".P1"
         ],
         "2": [
@@ -320,7 +318,7 @@
       "subprogram": [],
       "channels": {
         "1": [
-          ".PA",
+          ".",
           ""
         ],
         "2": [
@@ -430,7 +428,7 @@
       "subprogram": [],
       "channels": {
         "1": [
-          ".PA",
+          ".",
           ""
         ],
         "2": [
@@ -559,6 +557,5 @@
       ],
       "channels": {}
     }
-  },
-  "SIEMENS_840D": "SIEMENS_840DI"
+  }
 }
