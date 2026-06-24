@@ -88,7 +88,7 @@ class TestCgiServerConversion(unittest.TestCase):
                     [
                         {
                             "program": program,
-                            "machineName": "SIEMENS_840D",
+                            "machineName": "SIEMENS_840DI",
                             "canalNr": "1",
                         }
                     ]
