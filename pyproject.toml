@@ -4,13 +4,16 @@ build-backend = "hatchling.build"
 
 [project]
 name = "ncplot7py"
-version = "0.0.1"
+version = "0.1.0"
 description = "ncplot7py — plotting and utilities for NetCDF data"
 readme = "README.md"
 license = { text = "See LICENSE" }
 authors = [ { name = "d-creations" } ]
 requires-python = ">=3.8"
 dependencies = []
+
+[project.urls]
+Changelog = "https://github.com/d-creations/ncplot7py/blob/main/CHANGELOG.md"
 
 
 [tool.testing]
@@ -34,6 +37,7 @@ force-include = { "src/ncplot7py/config/machines.json" = "ncplot7py/config/machi
 include = [
   "src/ncplot7py",
   "README.md",
+  "CHANGELOG.md",
   "LICENSE",
   "tests",
 ]
