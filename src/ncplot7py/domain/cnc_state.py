@@ -13,10 +13,10 @@ from typing import Dict, List, Optional, Tuple
 # To avoid circular imports if machines imports cnc_state (it doesn't), we can import here.
 # However, to be safe, we'll use Any or object for now, or try import.
 try:
-    from ncplot7py.domain.machines import MachineConfig, FANUC_GENERIC_CONFIG
+    from ncplot7py.domain.machines import MachineConfig, get_machine_config
 except ImportError:
     MachineConfig = object
-    FANUC_GENERIC_CONFIG = None
+    get_machine_config = None
 
 AxisName = str
 Numeric = float
@@ -83,8 +83,8 @@ class CNCState:
             self._apply_machine_config_defaults()
 
     def __post_init__(self):
-        if self.machine_config is None and FANUC_GENERIC_CONFIG is not None:
-            self.machine_config = FANUC_GENERIC_CONFIG
+        if self.machine_config is None and get_machine_config is not None:
+            self.machine_config = get_machine_config("FANUC_MILL")
 
         self._apply_machine_config_defaults()
 

@@ -291,7 +291,7 @@ class UniversalConfigDrivenCanal(BaseStatefulCanal):
         from ncplot7py.infrastructure.handler_chain_builder import HandlerChainBuilder
         from ncplot7py.domain.machines import get_machine_config
 
-        if self._state.machine_config is None or self._state.machine_config.name == "FANUC_GENERIC":
+        if self._state.machine_config is None:
             self._state.machine_config = get_machine_config("FANUC_MILL")
 
         default_plane = _plane_from_default_code(self._state.machine_config.default_plane)

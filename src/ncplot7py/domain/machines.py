@@ -36,15 +36,6 @@ class MachineConfig:
     file_extensions: Dict[str, Any] = field(default_factory=dict)
 
 
-FANUC_GENERIC_CONFIG = MachineConfig(
-    name='FANUC_GENERIC',
-    control_type='FANUC',
-    variable_pattern=r'#(\d+)',
-    variable_prefix='#',
-    parser_name='fanuc',
-    tool_range=(0, 9999),
-)
-
 # --- Machine Definitions ---
 
 # Registry of configs
@@ -52,7 +43,7 @@ MACHINE_CONFIGS: Dict[str, MachineConfig] = {}
 
 def load_machine_configs():
     global MACHINE_CONFIGS
-    MACHINE_CONFIGS = {'FANUC_GENERIC': FANUC_GENERIC_CONFIG}
+    MACHINE_CONFIGS = {}
     try:
         try:
             config_text = files('ncplot7py').joinpath('config', 'machines.json').read_text(encoding='utf-8')
@@ -109,7 +100,7 @@ load_machine_configs()
 
 def get_machine_config(machine_name: str) -> MachineConfig:
     """Retrieve configuration for a given machine name."""
-    return MACHINE_CONFIGS.get(machine_name) or FANUC_GENERIC_CONFIG
+    return MACHINE_CONFIGS.get(machine_name) or MACHINE_CONFIGS.get('FANUC_MILL')
 
 def get_machine_regex_patterns(control_type: str) -> Dict[str, Any]:
     """Return regex patterns for parsing NC code based on control type.
@@ -125,9 +116,9 @@ def get_machine_regex_patterns(control_type: str) -> Dict[str, Any]:
     # In a real app, we'd pass the specific machine name.
     # For backward compatibility, we map control_type to a config.
     
-    config = MACHINE_CONFIGS.get(control_type, MACHINE_CONFIGS.get('FANUC_GENERIC'))
+    config = MACHINE_CONFIGS.get(control_type) or MACHINE_CONFIGS.get('FANUC_MILL')
     
-    if config is None or config.name == 'FANUC_GENERIC':
+    if config is None or config.name == 'FANUC_MILL':
         for key, c in MACHINE_CONFIGS.items():
             if c.control_type == control_type:
                 config = c

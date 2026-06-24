@@ -26,7 +26,7 @@ class TestCycleEndIntegration(unittest.TestCase):
         G0 X30  (Should not be reached)
         """
         
-        config = get_machine_config("FANUC_GENERIC")
+        config = get_machine_config("FANUC_MILL")
         config.cycle_start_code = "M20"
         state = CNCState(machine_config=config)
         ctrl = UniversalConfigDrivenControl(init_nc_states=[state])
@@ -62,7 +62,7 @@ class TestCycleEndIntegration(unittest.TestCase):
         """
         
         config = get_machine_config("SIEMENS_840DI")
-        if not config or config.name == "FANUC_GENERIC":
+        if not config or config.name == "FANUC_MILL":
             config = MachineConfig(
                 name="SIEMENS_840DI", control_type="SIEMENS",
                 variable_pattern="R(\\d+)", variable_prefix="R", tool_range=(0, 9999)

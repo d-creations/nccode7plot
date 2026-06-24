@@ -137,7 +137,16 @@ def test_configured_seventh_axis_can_map_to_motion_axis():
 
 
 def test_rapid_move_has_zero_duration_without_feed_rate():
-    state = CNCState()
+    state = CNCState(
+        machine_config=MachineConfig(
+            name="TEST_NO_RAPID",
+            control_type="FANUC",
+            variable_pattern=r'#(\d+)',
+            variable_prefix='#',
+            tool_range=(0, 9999),
+            rapid_feed_rate=None,
+        )
+    )
     state.update_axes({"Y": 0.0, "Z": 0.0})
 
     node = NCCommandNode(g_code_command={"G0"}, command_parameter={"Y": "0.0", "Z": "-2.0"})

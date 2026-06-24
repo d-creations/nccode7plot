@@ -6,7 +6,7 @@ from ncplot7py.domain.machines import MachineConfig, get_machine_config
 
 @pytest.fixture
 def fanuc_config():
-    config = get_machine_config("FANUC_GENERIC")
+    config = get_machine_config("FANUC_MILL")
     config.cycle_start_code = "M20"
     return config
 
