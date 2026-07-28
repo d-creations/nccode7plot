@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import re
-from typing import Dict, Optional, Set
+from typing import Dict, List, Optional, Set, Tuple
 
 from ncplot7py.domain import exceptions as domain_exceptions
 from ncplot7py.interfaces.BaseNCCommandParser import BaseNCCommandParser
@@ -10,6 +10,18 @@ from ncplot7py.shared.nc_nodes import NCCommandNode
 
 class SiemensCommandParser(BaseNCCommandParser):
     """Parse Siemens-style NC/G-code lines into NCCommandNode instances."""
+
+    def split_program(self, program: str) -> List[Tuple[str, int]]:
+        """Keep semicolons for Siemens, where they begin line comments."""
+        if program is None:
+            return []
+        commands = [
+            (physical_line, line_number)
+            for line_number, physical_line in enumerate(program.splitlines(), start=1)
+        ]
+        if not commands and program:
+            commands.append((program, 1))
+        return commands
 
     def parse(self, nc_command_string: str, line_nr: Optional[int] = None) -> NCCommandNode:
         g_code_set: Set[str] = set()

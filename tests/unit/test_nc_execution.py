@@ -6,6 +6,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', 'src'))
 
 from ncplot7py.application.nc_execution import NCExecutionEngine
 from ncplot7py.infrastructure.machines.base_stateful_control import BaseStatefulCanal
+from ncplot7py.infrastructure.parsers.nc_command_parser import NCCommandStringParser
 
 
 class _Point:
@@ -118,6 +119,8 @@ class TestNCExecutionEngine(unittest.TestCase):
         engine = NCExecutionEngine(ctrl)
         programs = ["G1 X1 Y1 Z1;G1 X2 Y2 Z2"]
         result = engine.get_Syncro_plot(programs, synch=False)
+        parsed_nodes, _ = ctrl._ran[0]
+        self.assertEqual(len(parsed_nodes), 2)
         # one canal
         self.assertIsInstance(result, list)
         self.assertEqual(len(result), 1)
@@ -187,6 +190,21 @@ class TestNCExecutionEngine(unittest.TestCase):
                 ("Messen", 3),
             ],
         )
+
+    def test_siemens_comment_line_is_not_split_into_executable_code(self):
+        ctrl = FakeControlHappy()
+        engine = NCExecutionEngine(ctrl)
+        parser = NCCommandStringParser(parser_name="siemens")
+        engine._get_parser = lambda: parser
+
+        engine.get_Syncro_plot([";G1 X1 Y1 Z1\nG1 X2 Y2 Z2 ; comment"], synch=False)
+
+        parsed_nodes, _ = ctrl._ran[0]
+        self.assertEqual(len(parsed_nodes), 2)
+        self.assertEqual(parsed_nodes[0].g_code, set())
+        self.assertEqual(parsed_nodes[0].command_parameter, {})
+        self.assertIn("G1", parsed_nodes[1].g_code)
+        self.assertEqual(parsed_nodes[1].command_parameter.get("X"), "2")
 
     def test_parse_error_stops_execution_immediately(self):
         ctrl = FakeControlHappy()

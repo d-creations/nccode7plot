@@ -205,13 +205,16 @@ class NCExecutionEngine:
         except TypeError:
             return parser_cls()
 
-    def _split_program_lines(self, program: str) -> List[Tuple[str, int]]:
+    def _split_program_lines(self, program: str, parser=None) -> List[Tuple[str, int]]:
         """Split an NC program string into command lines.
 
-        Supports both legacy semicolon-separated input and newline-separated
-        input, which is common when programs are pasted as multi-line text.
-        Each returned command carries its original editor line number.
+        Source syntax is delegated to the selected machine parser. The fallback
+        preserves legacy semicolon-separated input for custom parsers.
         """
+        if parser is not None:
+            split_program = getattr(parser, "split_program", None)
+            if callable(split_program):
+                return split_program(program)
         if program is None:
             return []
         split_lines: List[Tuple[str, int]] = []
@@ -257,7 +260,7 @@ class NCExecutionEngine:
         for program in programs:
             # Parse program into a list of command nodes
             node_list = []
-            raw_lines = self._split_program_lines(program)
+            raw_lines = self._split_program_lines(program, parser)
             for raw_line, source_line in raw_lines:
                 # Skip empty commands for parsing, but keep source_line tied to editor line numbers.
                 if not raw_line.strip():

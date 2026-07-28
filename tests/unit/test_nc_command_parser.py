@@ -46,6 +46,19 @@ class TestNCCommandParser(unittest.TestCase):
         node = self.parser.parse("T0101(SR20 JII MODEL HEAD 1)")
         self.assertEqual(node.command_parameter.get("T"), "0101")
 
+    def test_fanuc_nested_parenthesis_comment_is_ignored(self):
+        parser = NCCommandStringParser(parser_name="fanuc")
+        node = parser.parse("G1 X10 (outer (inner) comment) Y20")
+        self.assertEqual(node.command_parameter.get("X"), "10")
+        self.assertEqual(node.command_parameter.get("Y"), "20")
+
+    def test_program_splitting_uses_machine_comment_syntax(self):
+        fanuc = NCCommandStringParser(parser_name="fanuc")
+        siemens = NCCommandStringParser(parser_name="siemens")
+
+        self.assertEqual(fanuc.split_program("G1 X1;G1 X2"), [("G1 X1", 1), ("G1 X2", 1)])
+        self.assertEqual(siemens.split_program(";G1 X1\nG1 X2 ; comment"), [(";G1 X1", 1), ("G1 X2 ; comment", 2)])
+
     def test_inline_macro_comment_is_ignored(self):
         node = self.parser.parse("#501=0.2(SUREPAISSEUR DRESSAGE)")
         self.assertIn("#501=0.2", node.variable_command)
@@ -64,11 +77,12 @@ class TestNCCommandParser(unittest.TestCase):
         self.assertIn("R10=$MA_COMPRESS_POS_TOL[X]", node.variable_command)
 
     def test_inline_semicolon_comments_are_ignored(self):
-        node = self.parser.parse(";FRAME/NULLPUNKT==G54")
+        parser = NCCommandStringParser(parser_name="siemens")
+        node = parser.parse(";FRAME/NULLPUNKT==G54")
         self.assertEqual(node.command_parameter, {})
         self.assertEqual(node.g_code, set())
         
-        node2 = self.parser.parse("T1 ; Fraeser Referenz=SPITZE")
+        node2 = parser.parse("T1 ; Fraeser Referenz=SPITZE")
         self.assertEqual(node2.command_parameter.get("T"), "1")
         self.assertNotIn("F", node2.command_parameter)
         self.assertEqual(node2.variable_command, None)

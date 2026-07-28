@@ -11,6 +11,20 @@ from ncplot7py.shared.nc_nodes import NCCommandNode
 class FanucCommandParser(BaseNCCommandParser):
     """Parse Fanuc-style NC/G-code lines into NCCommandNode instances."""
 
+    @staticmethod
+    def _remove_parenthesis_comments(text: str) -> str:
+        """Remove Fanuc parenthesis comments, including nested comments."""
+        result = []
+        depth = 0
+        for character in text:
+            if character == '(':
+                depth += 1
+            elif character == ')' and depth:
+                depth -= 1
+            elif depth == 0:
+                result.append(character)
+        return "".join(result)
+
     def parse(self, nc_command_string: str, line_nr: Optional[int] = None) -> NCCommandNode:
         g_code_set: Set[str] = set()
         axis_coordinate_dict: Dict[str, str] = {}
@@ -33,10 +47,7 @@ class FanucCommandParser(BaseNCCommandParser):
             return token
 
         nc_line = re.sub(r'"[^"]*"', mask_match, nc_command_string)
-        if ";" in nc_line:
-            nc_line = nc_line.split(";", 1)[0]
-
-        nc_line = re.sub(r"\([^)]*\)", "", nc_line)
+        nc_line = self._remove_parenthesis_comments(nc_line)
         nc_line = re.sub(" ", "", nc_line)
         if nc_line.startswith('/'):
             nc_line = nc_line[1:]
