@@ -4,6 +4,7 @@ import re
 from typing import Dict, Optional, Set
 
 from ncplot7py.domain import exceptions as domain_exceptions
+from ncplot7py.infrastructure.lexers.fanuc_program_lexer import FanucProgramLexer
 from ncplot7py.interfaces.BaseNCCommandParser import BaseNCCommandParser
 from ncplot7py.shared.nc_nodes import NCCommandNode
 
@@ -11,19 +12,7 @@ from ncplot7py.shared.nc_nodes import NCCommandNode
 class FanucCommandParser(BaseNCCommandParser):
     """Parse Fanuc-style NC/G-code lines into NCCommandNode instances."""
 
-    @staticmethod
-    def _remove_parenthesis_comments(text: str) -> str:
-        """Remove Fanuc parenthesis comments, including nested comments."""
-        result = []
-        depth = 0
-        for character in text:
-            if character == '(':
-                depth += 1
-            elif character == ')' and depth:
-                depth -= 1
-            elif depth == 0:
-                result.append(character)
-        return "".join(result)
+    _lexer = FanucProgramLexer()
 
     def parse(self, nc_command_string: str, line_nr: Optional[int] = None) -> NCCommandNode:
         g_code_set: Set[str] = set()
@@ -47,7 +36,9 @@ class FanucCommandParser(BaseNCCommandParser):
             return token
 
         nc_line = re.sub(r'"[^"]*"', mask_match, nc_command_string)
-        nc_line = self._remove_parenthesis_comments(nc_line)
+        # Keep direct parser calls backward compatible; normal execution has
+        # already performed this operation in the program lexer.
+        nc_line = self._lexer.strip_comments(nc_line)
         nc_line = re.sub(" ", "", nc_line)
         if nc_line.startswith('/'):
             nc_line = nc_line[1:]

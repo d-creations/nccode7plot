@@ -51,7 +51,7 @@ class SiemensFlowControlHandler(Handler):
 
         stack: list[NCCommandNode] = []
         while_stack_by_label: Dict[str, NCCommandNode] = {}
-        if_stack: list[NCCommandNode] = []
+        if_stack: list[tuple[NCCommandNode, Optional[NCCommandNode]]] = []
         repeat_stack: list[NCCommandNode] = []
         for node in self._nodes:
             command = (node.loop_command or "").strip()
@@ -79,18 +79,16 @@ class SiemensFlowControlHandler(Handler):
                     self._while_to_end[start] = node
                     self._end_to_while[node] = start
             elif upper.startswith("IF") and "GOTO" not in upper:
-                if_stack.append(node)
+                if_stack.append((node, None))
             elif upper == "ELSE" and if_stack:
-                self._if_to_else_or_end[if_stack[-1]] = node
+                start, _ = if_stack[-1]
+                self._if_to_else_or_end[start] = node
+                if_stack[-1] = (start, node)
             elif upper == "ENDIF" and if_stack:
-                start = if_stack.pop()
+                start, else_node = if_stack.pop()
                 self._if_to_else_or_end.setdefault(start, node)
-                for maybe_else, end in list(self._else_to_end.items()):
-                    if end is None:
-                        self._else_to_end[maybe_else] = node
-                previous = getattr(node, "_before_ncCode", None)
-                if previous and (previous.loop_command or "").upper() == "ELSE":
-                    self._else_to_end[previous] = node
+                if else_node is not None:
+                    self._else_to_end[else_node] = node
             elif upper == "REPEAT":
                 repeat_stack.append(node)
             elif upper.startswith("UNTIL") and repeat_stack:
@@ -105,15 +103,20 @@ class SiemensFlowControlHandler(Handler):
         if not command:
             return super().handle(node, state)
 
+        # Discard a jump left on this node by an earlier iteration before
+        # evaluating the command against the current variable state.
+        if node in self._default_next:
+            node._next_ncCode = self._default_next[node]
+
         upper = command.upper()
         if upper.startswith(("GOTOF", "GOTOB", "GOTOC", "GOTO")):
             self._handle_goto(node, command)
         elif upper.startswith("IF"):
             self._handle_if(node, command, state)
         elif upper == "ELSE":
-            end_node = self._find_matching_endif_after(node)
+            end_node = self._else_to_end.get(node)
             if end_node is not None:
-                node._next_ncCode = getattr(end_node, "_next_ncCode", None)
+                node._next_ncCode = self._default_next.get(end_node)
         elif upper.startswith("FOR"):
             self._handle_for(node, command, state)
         elif upper == "ENDFOR":
@@ -209,20 +212,5 @@ class SiemensFlowControlHandler(Handler):
             start_node = self._until_to_repeat.get(node)
             if start_node is not None:
                 node._next_ncCode = getattr(start_node, "_next_ncCode", None)
-
-    def _find_matching_endif_after(self, node: NCCommandNode) -> Optional[NCCommandNode]:
-        depth = 0
-        current = getattr(node, "_next_ncCode", None)
-        while current is not None:
-            command = (current.loop_command or "").upper()
-            if command.startswith("IF"):
-                depth += 1
-            elif command == "ENDIF":
-                if depth == 0:
-                    return current
-                depth -= 1
-            current = getattr(current, "_next_ncCode", None)
-        return None
-
 
 __all__ = ["SiemensFlowControlHandler"]

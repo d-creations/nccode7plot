@@ -52,13 +52,6 @@ class TestNCCommandParser(unittest.TestCase):
         self.assertEqual(node.command_parameter.get("X"), "10")
         self.assertEqual(node.command_parameter.get("Y"), "20")
 
-    def test_program_splitting_uses_machine_comment_syntax(self):
-        fanuc = NCCommandStringParser(parser_name="fanuc")
-        siemens = NCCommandStringParser(parser_name="siemens")
-
-        self.assertEqual(fanuc.split_program("G1 X1;G1 X2"), [("G1 X1", 1), ("G1 X2", 1)])
-        self.assertEqual(siemens.split_program(";G1 X1\nG1 X2 ; comment"), [(";G1 X1", 1), ("G1 X2 ; comment", 2)])
-
     def test_inline_macro_comment_is_ignored(self):
         node = self.parser.parse("#501=0.2(SUREPAISSEUR DRESSAGE)")
         self.assertIn("#501=0.2", node.variable_command)

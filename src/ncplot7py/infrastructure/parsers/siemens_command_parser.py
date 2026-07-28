@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 import re
-from typing import Dict, List, Optional, Set, Tuple
+from typing import Dict, Optional, Set
 
 from ncplot7py.domain import exceptions as domain_exceptions
+from ncplot7py.infrastructure.lexers.siemens_program_lexer import SiemensProgramLexer
 from ncplot7py.interfaces.BaseNCCommandParser import BaseNCCommandParser
 from ncplot7py.shared.nc_nodes import NCCommandNode
 
@@ -11,17 +12,7 @@ from ncplot7py.shared.nc_nodes import NCCommandNode
 class SiemensCommandParser(BaseNCCommandParser):
     """Parse Siemens-style NC/G-code lines into NCCommandNode instances."""
 
-    def split_program(self, program: str) -> List[Tuple[str, int]]:
-        """Keep semicolons for Siemens, where they begin line comments."""
-        if program is None:
-            return []
-        commands = [
-            (physical_line, line_number)
-            for line_number, physical_line in enumerate(program.splitlines(), start=1)
-        ]
-        if not commands and program:
-            commands.append((program, 1))
-        return commands
+    _lexer = SiemensProgramLexer()
 
     def parse(self, nc_command_string: str, line_nr: Optional[int] = None) -> NCCommandNode:
         g_code_set: Set[str] = set()
@@ -51,12 +42,9 @@ class SiemensCommandParser(BaseNCCommandParser):
 
         nc_line = re.sub(r'"[^"]*"', mask_match, nc_command_string)
 
-        if ';' in nc_line:
-            before_comment, after_comment = nc_line.split(';', 1)
-            if re.match(r"^\s*SETAL\s*\(", before_comment, re.IGNORECASE):
-                nc_line = before_comment + ';' + after_comment
-            else:
-                nc_line = before_comment
+        # Keep direct parser calls backward compatible; normal execution has
+        # already performed this operation in the program lexer.
+        nc_line = self._lexer.strip_comments(nc_line)
 
         siemens_statement = nc_line.strip()
         siemens_statement_upper = siemens_statement.upper()

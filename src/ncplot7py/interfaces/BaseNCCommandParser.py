@@ -6,7 +6,7 @@ implementations can be swapped in tests or at runtime.
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import List, Optional, Tuple
+from typing import Optional
 
 from .BaseNCCommandNode import BaseNCCommandNode
 
@@ -31,18 +31,3 @@ class BaseNCCommandParser(ABC):
         """
         raise NotImplementedError()
 
-    def split_program(self, program: str) -> List[Tuple[str, int]]:
-        """Split source text into commands while preserving source line numbers.
-
-        The default keeps the legacy semicolon-separated transport format used
-        by Fanuc callers. Dialects where semicolon has another meaning override
-        this method.
-        """
-        if program is None:
-            return []
-        commands: List[Tuple[str, int]] = []
-        for line_number, physical_line in enumerate(program.splitlines(), start=1):
-            commands.extend((command, line_number) for command in physical_line.split(";"))
-        if not commands and program:
-            commands.append((program, 1))
-        return commands

@@ -336,6 +336,12 @@ class UniversalConfigDrivenControl(BaseStatefulControl):
 
         super().__init__(UniversalConfigDrivenCanal, count_of_canals, canal_names, init_nc_states)
 
+        from ncplot7py.infrastructure.nc_language_frontend import create_language_frontend
+
+        state = self.get_nc_state(1)
+        machine_config = getattr(state, "machine_config", None)
+        self.language_frontend = create_language_frontend(machine_config)
+
     def synchro_points(self, tool_paths, nodes):
         if self._synchro_strategy == "STAR_WAIT":
             from ncplot7py.infrastructure.machines.star_canal_syncro import CanalSynchro

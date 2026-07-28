@@ -3,6 +3,7 @@
     "name": "FANUC_STAR_x-D_y-R_z_R",
     "control_type": "FANUC",
     "parser_name": "fanuc",
+    "lexer_name": "fanuc",
     "machine_type": "TURN_MILL",
     "channels": 2,
     "synchronization_strategy": "STAR_WAIT",
@@ -113,6 +114,7 @@
     "name": "FANUC_STAR_x-D_y-D_z_R",
     "control_type": "FANUC",
     "parser_name": "fanuc",
+    "lexer_name": "fanuc",
     "machine_type": "TURN_MILL",
     "channels": 2,
     "synchronization_strategy": "STAR_WAIT",
@@ -224,6 +226,7 @@
     "name": "FANUC_TURN",
     "control_type": "FANUC",
     "parser_name": "fanuc",
+    "lexer_name": "fanuc",
     "machine_type": "TURN",
     "channels": 1,
     "synchronization_strategy": "NONE",
@@ -336,6 +339,7 @@
     "name": "FANUC_MILL",
     "control_type": "FANUC",
     "parser_name": "fanuc",
+    "lexer_name": "fanuc",
     "machine_type": "MILL",
     "channels": 1,
     "synchronization_strategy": "NONE",
@@ -446,6 +450,7 @@
     "name": "SIEMENS_840DI",
     "control_type": "SIEMENS",
     "parser_name": "siemens",
+    "lexer_name": "siemens",
     "machine_type": "MILL",
     "channels": 1,
     "synchronization_strategy": "NONE",
@@ -498,7 +503,7 @@
       },
       {
         "token": "comment",
-        "regex": "\\([^)]*\\)"
+        "regex": ";.*$"
       },
       {
         "token": "string.quoted.double",

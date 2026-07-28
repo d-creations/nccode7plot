@@ -13,7 +13,6 @@ from __future__ import annotations
 
 import re
 from typing import Optional, Tuple
-import os
 import logging
 
 from ncplot7py.domain.exec_chain import Handler
@@ -34,6 +33,9 @@ class ControlFlowHandler(Handler):
         self._do_map = None
         self._end_map = None
         self._nodes = None
+        self._default_next = {}
+        self._do_to_end = {}
+        self._end_to_do = {}
         self._loop_counters = {}
 
     def setup_maps(self, nodes: list[NCCommandNode]) -> None:
@@ -44,7 +46,13 @@ class ControlFlowHandler(Handler):
         self._n_map = {}
         self._do_map = {}
         self._end_map = {}
+        self._default_next = {
+            node: getattr(node, "_next_ncCode", None) for node in self._nodes
+        }
+        self._do_to_end = {}
+        self._end_to_do = {}
         self._loop_counters = {}
+        open_do = {}
 
         for nd in self._nodes:
             try:
@@ -62,8 +70,14 @@ class ControlFlowHandler(Handler):
             if lc:
                 for m in re.findall(r"DO(\d+)", lc):
                     self._do_map.setdefault(m, []).append(nd)
+                    open_do.setdefault(m, []).append(nd)
                 for m in re.findall(r"END(\d+)", lc):
                     self._end_map.setdefault(m, []).append(nd)
+                    starts = open_do.get(m)
+                    if starts:
+                        start = starts.pop()
+                        self._do_to_end[start] = nd
+                        self._end_to_do[nd] = start
 
     def _find_node_with_N(self, start: NCCommandNode, pos: str) -> Optional[NCCommandNode]:
         # Prefer lookup via precomputed map when available
@@ -109,25 +123,12 @@ class ControlFlowHandler(Handler):
         return None
 
     def _find_end_for_do(self, start: NCCommandNode, pos: str) -> Optional[NCCommandNode]:
-        # Prefer map lookup when available
-        if getattr(self, "_end_map", None) is not None:
-            lst = self._end_map.get(pos)
-            if lst:
-                # return first end node after start
-                if self._nodes is not None:
-                    try:
-                        start_idx = self._nodes.index(start)
-                    except ValueError:
-                        start_idx = -1
-                    for n in lst:
-                        try:
-                            idx = self._nodes.index(n)
-                            if idx > start_idx:
-                                return n
-                        except ValueError:
-                            continue
-                return lst[0]
+        # Normal execution uses the pair map built once by setup_maps().
+        target = self._do_to_end.get(start)
+        if target is not None:
+            return target
 
+        # Retain a linked-list fallback for direct use without setup_maps().
         node = start
         while node is not None:
             lc = node.loop_command
@@ -197,6 +198,11 @@ class ControlFlowHandler(Handler):
         if not lc:
             return super().handle(node, state)
 
+        # A previous loop iteration may have changed this pointer. Always
+        # begin from the immutable fall-through target captured at setup.
+        if node in self._default_next:
+            node._next_ncCode = self._default_next[node]
+
         # Insert spaces before tokens to help splitting (parser removed spaces)
         command = re.sub(self.TOKEN_RE, r" \1", lc)
         tokens = [t for t in command.split(" ") if t]
@@ -218,12 +224,7 @@ class ControlFlowHandler(Handler):
                             break
                 else:
                     # Condition false -> restore fallback pointer if previously modified
-                    if self._nodes is not None:
-                        try:
-                            idx = self._nodes.index(node)
-                            node._next_ncCode = self._nodes[idx + 1] if idx + 1 < len(self._nodes) else None
-                        except ValueError:
-                            pass
+                    node._next_ncCode = self._default_next.get(node, getattr(node, "_next_ncCode", None))
                 # whether true or false, stop processing IF
                 break
             elif token.startswith("GOTO"):
@@ -283,30 +284,8 @@ class ControlFlowHandler(Handler):
                 break
             elif token.startswith("END"):
                 label = token[3:]
-                # find matching DO node (prefer map)
-                do_node = None
-                if getattr(self, "_do_map", None) is not None and label in self._do_map:
-                    # pick the nearest DO before this END
-                    candidates = self._do_map[label]
-                    if self._nodes is not None:
-                        try:
-                            end_idx = self._nodes.index(node)
-                        except ValueError:
-                            end_idx = -1
-                        best = None
-                        best_idx = -1
-                        for n in candidates:
-                            try:
-                                idx = self._nodes.index(n)
-                                if idx < end_idx and idx > best_idx:
-                                    best = n
-                                    best_idx = idx
-                            except ValueError:
-                                continue
-                        do_node = best or (candidates[0] if candidates else None)
-                    else:
-                        do_node = candidates[0] if candidates else None
-                else:
+                do_node = self._end_to_do.get(node)
+                if do_node is None:
                     # fallback: search backward for a DO with same label
                     cur = getattr(node, "_before_ncCode", None)
                     while cur is not None:
@@ -347,13 +326,9 @@ class ControlFlowHandler(Handler):
                                             node._next_ncCode = getattr(do_node, "_next_ncCode", do_node)
                                         else:
                                             # condition false -> ensure END falls through to next node
-                                            if self._nodes is not None:
-                                                try:
-                                                    end_idx = self._nodes.index(node)
-                                                    node._next_ncCode = self._nodes[end_idx + 1] if end_idx + 1 < len(self._nodes) else None
-                                                except Exception:
-                                                    # fallback: leave pointer as-is
-                                                    pass
+                                            node._next_ncCode = self._default_next.get(
+                                                node, getattr(node, "_next_ncCode", None)
+                                            )
                                     except Exception:
                                         # on error, fall through
                                         pass

@@ -5,6 +5,7 @@ from ncplot7py.domain.machines import get_machine_config
 from ncplot7py.domain.cnc_state import CNCState
 from ncplot7py.infrastructure.machines.base_stateful_control import UniversalConfigDrivenControl
 from ncplot7py.infrastructure.parsers.nc_command_parser import NCCommandStringParser
+from ncplot7py.infrastructure.lexers import FanucProgramLexer, SiemensProgramLexer
 from ncplot7py.domain.exceptions import ExceptionNode as NCError
 
 class TestRefactoringVerification(unittest.TestCase):
@@ -39,6 +40,17 @@ class TestRefactoringVerification(unittest.TestCase):
         with self.assertRaises(NCError) as cm:
             control.run_nc_code_list(nodes, 1)
         self.assertIn("out of range", str(cm.exception))
+
+    def test_machine_config_selects_language_frontend(self):
+        siemens = UniversalConfigDrivenControl(
+            init_nc_states=[CNCState(machine_config=get_machine_config("SIEMENS_840DI"))]
+        )
+        fanuc = UniversalConfigDrivenControl(
+            init_nc_states=[CNCState(machine_config=get_machine_config("FANUC_MILL"))]
+        )
+
+        self.assertIsInstance(siemens.language_frontend.lexer, SiemensProgramLexer)
+        self.assertIsInstance(fanuc.language_frontend.lexer, FanucProgramLexer)
 
     def test_fanuc_variables_and_tools(self):
         """Test Fanuc Star: #-parameters and Tool Range (0-99)."""

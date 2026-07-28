@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import re
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, Optional
 
 from ncplot7py.domain import exceptions as domain_exceptions
 from ncplot7py.infrastructure.parsers.fanuc_command_parser import FanucCommandParser
@@ -29,11 +29,6 @@ class NCCommandStringParser(BaseNCCommandParser):
     def parse(self, nc_command_string: str, line_nr: Optional[int] = None):
         parser_name = self._resolve_parser_name(nc_command_string)
         return self._get_delegate(parser_name).parse(nc_command_string, line_nr)
-
-    def split_program(self, program: str) -> List[Tuple[str, int]]:
-        """Apply the selected control dialect's source-line rules."""
-        parser_name = self._resolve_parser_name(program)
-        return self._get_delegate(parser_name).split_program(program)
 
     def _get_delegate(self, parser_name: str) -> BaseNCCommandParser:
         normalized = parser_name if parser_name in self._PARSER_MAP else "fanuc"

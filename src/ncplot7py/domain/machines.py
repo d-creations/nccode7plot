@@ -13,6 +13,7 @@ class MachineConfig:
     variable_prefix: str   # Prefix for variables, e.g. "#" or "R"
     tool_range: Tuple[int, int]
     parser_name: str = "fanuc"
+    lexer_name: str = "fanuc"
     machine_type: str = "MILL"
     channels: int = 1
     synchronization_strategy: str = "NONE"
@@ -64,6 +65,7 @@ def load_machine_configs():
                     variable_pattern=val['variable_pattern'],
                     variable_prefix=val['variable_prefix'],
                     parser_name=val.get('parser_name', 'siemens' if val.get('control_type') == 'SIEMENS' else 'fanuc'),
+                    lexer_name=val.get('lexer_name', val.get('parser_name', 'siemens' if val.get('control_type') == 'SIEMENS' else 'fanuc')),
                     tool_range=tuple(val['tool_range']),
                     machine_type=val.get('machine_type', 'MILL'),
                     channels=val.get('channels', 1),

@@ -36,6 +36,8 @@ class NCExecutionEngine:
     def __init__(
         self,
         cnc_control: Any,
+        lexer: Optional[Any] = None,
+        frontend: Optional[Any] = None,
     ) -> None:
         """Initialize the engine.
 
@@ -45,8 +47,16 @@ class NCExecutionEngine:
             An object implementing the NC control interface (run_nc_code_list,
             get_tool_path, get_exected_nodes, get_canal_name, get_canal_count,
             synchro_points).
+        lexer:
+            Optional source lexer override. Primarily useful for custom controls
+            that do not expose a configured language frontend.
+        frontend:
+            Optional lexer/parser pair. Config-driven controls construct and
+            expose this automatically from their machine configuration.
         """
         self.cnc_control = cnc_control
+        self._frontend = frontend or getattr(cnc_control, "language_frontend", None)
+        self._lexer = lexer
         self.caclulatet_runtime: float = -1.0
         self.errors: List[Dict[str, Any]] = []  # Collect errors for frontend reporting
         # If control offers canal count, use it, otherwise default to 1
@@ -186,6 +196,8 @@ class NCExecutionEngine:
                 pass
 
     def _get_parser(self):
+        if self._frontend is not None:
+            return self._frontend.parser
         self._ensure_parser()
         parser_cls = registry.get("parser", "nc_command")
         if parser_cls is None:
@@ -205,26 +217,25 @@ class NCExecutionEngine:
         except TypeError:
             return parser_cls()
 
-    def _split_program_lines(self, program: str, parser=None) -> List[Tuple[str, int]]:
-        """Split an NC program string into command lines.
+    def _get_lexer(self):
+        if self._lexer is not None:
+            return self._lexer
+        if self._frontend is not None:
+            return self._frontend.lexer
 
-        Source syntax is delegated to the selected machine parser. The fallback
-        preserves legacy semicolon-separated input for custom parsers.
-        """
-        if parser is not None:
-            split_program = getattr(parser, "split_program", None)
-            if callable(split_program):
-                return split_program(program)
-        if program is None:
-            return []
-        split_lines: List[Tuple[str, int]] = []
-        for line_number, physical_line in enumerate(program.splitlines(), start=1):
-            for command in physical_line.split(";"):
-                split_lines.append((command, line_number))
+        from ncplot7py.infrastructure.lexers import create_program_lexer
 
-        if not split_lines and program:
-            split_lines.append((program, 1))
-        return split_lines
+        lexer_name = None
+        try:
+            state = self._get_canal_state(0)
+            machine_config = getattr(state, "machine_config", None)
+            lexer_name = getattr(machine_config, "lexer_name", None)
+            if lexer_name is None:
+                lexer_name = getattr(machine_config, "parser_name", None)
+        except Exception:
+            lexer_name = None
+        self._lexer = create_program_lexer(lexer_name)
+        return self._lexer
 
     def get_Syncro_plot(self, programs: List[str], synch: bool) -> List[Dict]:
         """Create the plot for the given NC `programs`.
@@ -247,6 +258,7 @@ class NCExecutionEngine:
         parser = None
         try:
             parser = self._get_parser()
+            lexer = self._get_lexer()
         except Exception as e:
             self._add_error(e, line=0, canal=0)
             print_error(f"Parser setup failed: {e}")
@@ -260,8 +272,10 @@ class NCExecutionEngine:
         for program in programs:
             # Parse program into a list of command nodes
             node_list = []
-            raw_lines = self._split_program_lines(program, parser)
-            for raw_line, source_line in raw_lines:
+            statements = lexer.lex(program)
+            for statement in statements:
+                raw_line = statement.text
+                source_line = statement.line
                 # Skip empty commands for parsing, but keep source_line tied to editor line numbers.
                 if not raw_line.strip():
                     continue
