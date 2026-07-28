@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+---
+
+## [0.1.1] - 2026-07-28
+
 ### Added
 - Added machine-specific NC program lexers selected through `lexer_name` in the machine configuration.
 - Added a language frontend that composes the configured lexer and command parser for each machine control.
@@ -24,6 +28,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed Siemens lines beginning with `;` being split and executed as NC commands.
 - Fixed Siemens inline comments while preserving semicolons inside quoted strings and `SETAL(...);message` alarm text.
 - Fixed nested FANUC parenthesis comments and prevented semicolons inside comments or quoted strings from splitting commands.
+- Fixed `POCKET4` depth calculation: `DP=0` with `DPR>0` now correctly uses the relative depth instead of silently producing zero depth.
+- Fixed `POCKET4` ignoring the `MID` parameter; the cycle now steps down by `MID` per pass and mills concentric circles at each depth level.
 
 ---
 

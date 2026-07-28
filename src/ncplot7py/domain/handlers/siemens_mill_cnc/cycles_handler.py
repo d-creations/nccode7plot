@@ -739,92 +739,108 @@ class SiemensNamedCyclesHandler(Handler):
         prad = self._parse_float(params[5])
         cpa = self._parse_float(params[6])
         cpo = self._parse_float(params[7])
-        
-        # Try to parse MIDA (index 16) - Wait, standard is 15. Let's check both or stick to one.
-        # Based on standard: 15 is MIDA.
-        # But let's keep the logic flexible or check what I did before.
-        # I'll read index 15 first, if it looks like MIDA.
-        
-        mida = 0.0
-        if len(params) > 15:
-             mida = self._parse_float(params[15])
-        
+        mid = self._parse_float(params[10]) if len(params) > 10 and params[10] else 0.0
+
+        mida = self._parse_float(params[15]) if len(params) > 15 else 0.0
+
         # If MIDA is 0 or missing, default to something reasonable (e.g. 50% of radius)
         if mida <= 0:
             mida = prad / 2.0
-            
+
         # Handle case where PRAD is 0 (e.g. helical drilling or defined by other params)
         # If PRAD is 0, check RAD1 (index 20)
         if prad == 0 and len(params) > 20:
             prad = self._parse_float(params[20])
-            
-        final_z = dp if dp is not None else (rfp - abs(dpr) if dpr is not None else rfp)
+
+        # Bug fix: prefer DPR (relative depth, always positive) when non-zero.
+        # DP=0 with DPR>0 must use DPR; a truly zero DP only means no depth when DPR is also 0.
+        if dpr is not None and abs(dpr) > 0:
+            final_z = rfp - abs(dpr)
+        elif dp is not None:
+            final_z = dp
+        else:
+            final_z = rfp
+
         start_z = rfp + abs(sdis)
-        
+
         points = []
         duration = 0.0
         # Ensure non-zero feed rate to avoid division by zero
         current_feed = state.feed_rate if state.feed_rate is not None else 0.0
         feed_rate = current_feed if current_feed > 0 else 1000.0
-        
+
         ffd = self._parse_float(params[12]) if len(params) > 12 else 0.0
         ffp1 = self._parse_float(params[13]) if len(params) > 13 else 0.0
-        
+
         plunge_feed = ffd if ffd > 0 else feed_rate
         machining_feed = ffp1 if ffp1 > 0 else feed_rate
-        
+
         # Move to Center
         points.append(Point(x=cpa, y=cpo, z=state.axes.get("Z", 0.0)))
         points.append(Point(x=cpa, y=cpo, z=start_z))
-        
-        # Feed to Depth
-        points.append(Point(x=cpa, y=cpo, z=final_z))
-        dist_plunge = abs(start_z - final_z)
-        duration += (dist_plunge / plunge_feed) * 60.0
-        
-        last_x, last_y = cpa, cpo
-        
-        # Generate concentric circles (clearing)
-        # If prad is still 0, we can't draw a circle, so just stay at center (drill)
-        if prad > 0:
-            current_rad = 0.0
-            while current_rad < prad:
-                current_rad += mida
-                if current_rad > prad:
-                    current_rad = prad
-                
-                # Adaptive steps
-                segment_len = 0.1
-                circumference = 2 * math.pi * current_rad
-                steps = max(36, int(circumference / segment_len))
-                
-                # Move to start of circle (0 degrees)
-                start_x = cpa + current_rad
-                start_y = cpo
-                points.append(Point(x=start_x, y=start_y, z=final_z))
-                
-                # Add distance from previous point to start of circle
-                dist = math.hypot(start_x - last_x, start_y - last_y)
-                duration += (dist / machining_feed) * 60.0
-                last_x, last_y = start_x, start_y
 
-                for i in range(1, steps + 1):
-                    ang = (i / steps) * 2 * math.pi
-                    x = cpa + current_rad * math.cos(ang)
-                    y = cpo + current_rad * math.sin(ang)
-                    points.append(Point(x=x, y=y, z=final_z))
-                    
-                    dist = math.hypot(x - last_x, y - last_y)
-                    duration += (dist / machining_feed) * 60.0
-                    last_x, last_y = x, y
-                    
-                if current_rad >= prad:
-                    break
-                
+        total_depth = start_z - final_z
+        if total_depth <= 0:
+            # No depth to machine — just retract
+            points.append(Point(x=cpa, y=cpo, z=rtp))
+            state.axes["Z"] = rtp
+            return points, duration
+
+        # MID: max infeed depth per pass. Default to full depth (single pass) when 0.
+        if mid <= 0 or mid >= total_depth:
+            mid = total_depth
+
+        last_x, last_y = cpa, cpo
+        current_z = start_z
+
+        # Multi-pass depth machining: step down by MID each pass, mill circles at each level.
+        while True:
+            next_z = max(final_z, current_z - mid)
+
+            # Plunge to this depth level at pocket center
+            points.append(Point(x=cpa, y=cpo, z=next_z))
+            duration += (abs(current_z - next_z) / plunge_feed) * 60.0
+            current_z = next_z
+            last_x, last_y = cpa, cpo
+
+            # Generate concentric circles (clearing) at this Z level.
+            # If prad is 0 we can't draw a circle, so just stay at center (drill-like).
+            if prad > 0:
+                mill_rad = 0.0
+                while mill_rad < prad:
+                    mill_rad = min(mill_rad + mida, prad)
+
+                    # Adaptive steps: one point every 0.1 mm of arc
+                    circumference = 2 * math.pi * mill_rad
+                    steps = max(36, int(circumference / 0.1))
+
+                    # Move to start of circle (0 degrees)
+                    start_x = cpa + mill_rad
+                    start_y = cpo
+                    points.append(Point(x=start_x, y=start_y, z=current_z))
+                    duration += (math.hypot(start_x - last_x, start_y - last_y) / machining_feed) * 60.0
+                    last_x, last_y = start_x, start_y
+
+                    for i in range(1, steps + 1):
+                        ang = (i / steps) * 2 * math.pi
+                        x = cpa + mill_rad * math.cos(ang)
+                        y = cpo + mill_rad * math.sin(ang)
+                        points.append(Point(x=x, y=y, z=current_z))
+                        duration += (math.hypot(x - last_x, y - last_y) / machining_feed) * 60.0
+                        last_x, last_y = x, y
+
+            if current_z <= final_z:
+                break
+
+            # Return to center for next plunge
+            if last_x != cpa or last_y != cpo:
+                points.append(Point(x=cpa, y=cpo, z=current_z))
+                last_x, last_y = cpa, cpo
+
         # Retract
-        points.append(Point(x=points[-1].x, y=points[-1].y, z=rtp))
+        points.append(Point(x=last_x, y=last_y, z=rtp))
         state.axes["Z"] = rtp
-        
+
         return points, duration
 
 
