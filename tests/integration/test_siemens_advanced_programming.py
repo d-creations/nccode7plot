@@ -2,6 +2,7 @@ import unittest
 
 from ncplot7py.application.nc_execution import NCExecutionEngine
 from ncplot7py.domain.cnc_state import CNCState
+from ncplot7py.domain.exceptions import ExceptionNode
 from ncplot7py.domain.machines import get_machine_config
 from ncplot7py.infrastructure.machines.base_stateful_control import UniversalConfigDrivenControl
 from ncplot7py.infrastructure.parsers.nc_command_parser import NCCommandStringParser
@@ -56,15 +57,16 @@ class TestSiemensAdvancedProgrammingIntegration(unittest.TestCase):
         GOTOF AFTER_SKIP
         G1 X999 Y999 Z999 F120
         AFTER_SKIP:
-        SETAL(62111)
         STOPRE
         TRAFOOF
         M83
         RET
+        SETAL(65000,"Programmed user alarm")
         """
 
         nodes = self.parser.parse(code)
-        self.control.run_nc_code_list(nodes, 1)
+        with self.assertRaises(ExceptionNode):
+            self.control.run_nc_code_list(nodes, 1)
 
         state = self.control.get_nc_state(1)
         path = self.control.get_tool_path(1)
@@ -86,7 +88,8 @@ class TestSiemensAdvancedProgrammingIntegration(unittest.TestCase):
         self.assertFalse(siemens["probe_enabled"])
         self.assertEqual(siemens["spindle_position"], 180.0)
         self.assertTrue(state.extra["program_returned"])
-        self.assertEqual(state.extra["alarms"][-1]["code"], 62111)
+        self.assertEqual(state.extra["alarms"][-1]["code"], 65000)
+        self.assertEqual(state.extra["alarms"][-1]["message"], "Programmed user alarm")
         self.assertTrue(siemens["preprocess_stops"])
 
         visited_points = [point for segment, _duration in path for point in segment]

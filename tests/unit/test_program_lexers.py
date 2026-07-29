@@ -39,7 +39,7 @@ class TestProgramLexers(unittest.TestCase):
         self.assertEqual([statement.line for statement in statements], [1, 2, 3])
 
     def test_siemens_setal_alarm_text_is_preserved(self):
-        source = "SETAL(62111);failure to reach the touch point"
+        source = "SETAL(65000);failure to reach the touch point"
         statements = SiemensProgramLexer().lex(source)
 
         self.assertEqual(statements[0].text, source)

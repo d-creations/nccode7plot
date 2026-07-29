@@ -15,6 +15,7 @@ class TestSiemensAdvancedProgrammingSpec(unittest.TestCase):
 
     def test_siemens_advanced_handlers_are_registered_before_cycles(self):
         expected_handlers = [
+            "siemens_alarm",
             "siemens_variables",
             "siemens_flow_control",
             "siemens_builtins",
@@ -135,17 +136,24 @@ class TestSiemensAdvancedProgrammingSpec(unittest.TestCase):
         self.assertEqual(frame["translation"], {"X": 10.0, "Y": 20.0, "Z": -5.0})
         self.assertEqual(frame["rotation"], {"X": 1.0, "Y": 2.0, "Z": 3.0})
 
-    def test_builtin_handler_records_setal_spos_and_ret(self):
+    def test_alarm_and_builtin_handlers_have_separate_responsibilities(self):
+        from ncplot7py.domain.handlers.siemens_mill_cnc.alarm_handler import SiemensAlarmHandler
         from ncplot7py.domain.handlers.siemens_mill_cnc.builtin_handler import SiemensBuiltinHandler
+        from ncplot7py.domain.exceptions import ExceptionNode, ExceptionTyps
 
         state = CNCState(machine_config=get_machine_config("SIEMENS_840DI"))
-        handler = SiemensBuiltinHandler()
+        builtin_handler = SiemensBuiltinHandler()
+        alarm_handler = SiemensAlarmHandler()
 
-        handler.handle(NCCommandNode(variable_command="SETAL(62111)", nc_code_line_nr=22), state)
-        handler.handle(NCCommandNode(variable_command="SPOS=180", nc_code_line_nr=23), state)
-        handler.handle(NCCommandNode(variable_command="RET", nc_code_line_nr=24), state)
+        builtin_handler.handle(NCCommandNode(variable_command="SPOS=180", nc_code_line_nr=23), state)
+        builtin_handler.handle(NCCommandNode(variable_command="RET", nc_code_line_nr=24), state)
+        with self.assertRaises(ExceptionNode) as caught:
+            alarm_handler.handle(NCCommandNode(variable_command='SETAL(65000,"Axis distance too small")', nc_code_line_nr=22), state)
 
-        self.assertEqual(state.extra["alarms"][-1]["code"], 62111)
+        self.assertEqual(caught.exception.typ, ExceptionTyps.CNCError)
+        self.assertEqual(caught.exception.code, 65000)
+        self.assertEqual(state.extra["alarms"][-1]["code"], 65000)
+        self.assertEqual(state.extra["alarms"][-1]["message"], "Axis distance too small")
         self.assertEqual(state.extra["alarms"][-1]["line"], 22)
         self.assertEqual(state.extra["siemens"]["spindle_position"], 180.0)
         self.assertTrue(state.extra["program_returned"])

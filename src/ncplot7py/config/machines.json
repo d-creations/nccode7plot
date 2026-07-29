@@ -8,6 +8,7 @@
     "channels": 2,
     "synchronization_strategy": "STAR_WAIT",
     "supported_gcode_groups": [
+      "fanuc_alarm",
       "variable",
       "control_flow",
       "tool_handler",
@@ -119,6 +120,7 @@
     "channels": 2,
     "synchronization_strategy": "STAR_WAIT",
     "supported_gcode_groups": [
+      "fanuc_alarm",
       "variable",
       "control_flow",
       "tool_handler",
@@ -231,6 +233,7 @@
     "channels": 1,
     "synchronization_strategy": "NONE",
     "supported_gcode_groups": [
+      "fanuc_alarm",
       "variable",
       "control_flow",
       "tool_handler",
@@ -344,6 +347,7 @@
     "channels": 1,
     "synchronization_strategy": "NONE",
     "supported_gcode_groups": [
+      "fanuc_alarm",
       "variable",
       "control_flow",
       "tool_handler",
@@ -455,6 +459,7 @@
     "channels": 1,
     "synchronization_strategy": "NONE",
     "supported_gcode_groups": [
+      "siemens_alarm",
       "siemens_variables",
       "siemens_flow_control",
       "siemens_builtins",

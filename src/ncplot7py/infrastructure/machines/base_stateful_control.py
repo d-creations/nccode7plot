@@ -230,6 +230,7 @@ class BaseStatefulControl(BaseNCControlInterface):
 HANDLER_REGISTRY = {
     # Core
     "variable": ("ncplot7py.domain.handlers.variable", "VariableHandler"),
+    "fanuc_alarm": ("ncplot7py.domain.handlers.fanuc_alarm", "FanucAlarmHandler"),
     "control_flow": ("ncplot7py.domain.handlers.control_flow", "ControlFlowHandler"),
     
     # Base
@@ -261,6 +262,7 @@ HANDLER_REGISTRY = {
     "star_turn": ("ncplot7py.domain.handlers.star_machine.star_turn_handler", "StarTurnHandler"),
     
     # Siemens Specific
+    "siemens_alarm": ("ncplot7py.domain.handlers.siemens_mill_cnc.alarm_handler", "SiemensAlarmHandler"),
     "siemens_variables": ("ncplot7py.domain.handlers.siemens_mill_cnc.variable_handler", "SiemensVariableHandler"),
     "siemens_flow_control": ("ncplot7py.domain.handlers.siemens_mill_cnc.flow_control_handler", "SiemensFlowControlHandler"),
     "siemens_builtins": ("ncplot7py.domain.handlers.siemens_mill_cnc.builtin_handler", "SiemensBuiltinHandler"),

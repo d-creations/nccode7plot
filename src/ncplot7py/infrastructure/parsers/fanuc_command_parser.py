@@ -35,6 +35,12 @@ class FanucCommandParser(BaseNCCommandParser):
             mask_counter += 1
             return token
 
+        if re.search(r"#\s*3000\s*=", nc_command_string, re.IGNORECASE):
+            return NCCommandNode(
+                variable_command=nc_command_string.strip(),
+                nc_code_line_nr=line_nr,
+            )
+
         nc_line = re.sub(r'"[^"]*"', mask_match, nc_command_string)
         # Keep direct parser calls backward compatible; normal execution has
         # already performed this operation in the program lexer.

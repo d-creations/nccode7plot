@@ -1,6 +1,7 @@
 """Fanuc source lexer."""
 from __future__ import annotations
 
+import re
 from typing import List
 
 from ncplot7py.interfaces.BaseNCProgramLexer import BaseNCProgramLexer, NCSourceStatement
@@ -27,6 +28,7 @@ class FanucProgramLexer(BaseNCProgramLexer):
         depth = 0
         in_string = False
         statement_column = 1
+        preserve_parentheses = re.search(r"#\s*3000\s*=", line, re.IGNORECASE) is not None
 
         for index, character in enumerate(line):
             if character == '"' and depth == 0:
@@ -34,13 +36,17 @@ class FanucProgramLexer(BaseNCProgramLexer):
                 current.append(character)
             elif not in_string and character == '(':
                 depth += 1
+                if preserve_parentheses:
+                    current.append(character)
             elif not in_string and character == ')' and depth:
                 depth -= 1
+                if preserve_parentheses:
+                    current.append(character)
             elif not in_string and depth == 0 and character == ';':
                 statements.append(NCSourceStatement("".join(current), line_number, statement_column))
                 current = []
                 statement_column = index + 2
-            elif depth == 0:
+            elif depth == 0 or preserve_parentheses:
                 current.append(character)
 
         statements.append(NCSourceStatement("".join(current), line_number, statement_column))

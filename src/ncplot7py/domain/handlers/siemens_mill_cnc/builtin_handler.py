@@ -21,12 +21,7 @@ class SiemensBuiltinHandler(Handler):
         command = (node.variable_command or "").strip()
         upper = command.upper()
 
-        setal_match = re.match(r"^SETAL\s*\(\s*([^\)]+)\s*\)(?:\s*;\s*(.*))?$", command, re.IGNORECASE)
-        if setal_match:
-            code = int(float(self._evaluator.evaluate(setal_match.group(1), state)))
-            message = setal_match.group(2) or "failure to reach the touch point" if code == 62111 else ""
-            state.extra.setdefault("alarms", []).append({"code": code, "message": message, "line": node.nc_code_line_nr})
-        elif re.match(r"^SPOSA?\s*=", command, re.IGNORECASE):
+        if re.match(r"^SPOSA?\s*=", command, re.IGNORECASE):
             _, value = command.split("=", 1)
             scope["spindle_position"] = self._evaluator.evaluate(value, state)
         elif upper == "RET" or upper == "M17":

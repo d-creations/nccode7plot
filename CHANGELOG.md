@@ -11,6 +11,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.1.2] - 2026-07-29
+
+### Added
+- Added FANUC custom macro alarm support for `#3000 = n (ALARM MESSAGE)` across all FANUC machine controls.
+- Added a dedicated Siemens user alarm handler for `SETAL(<alarm_no>[,"Alarm text"])` commands.
+- Added structured alarm details to `state.extra["alarms"]`, including the alarm code, message, and source line.
+
+### Changed
+- FANUC `#3000` and Siemens `SETAL` user alarms now stop NC code execution and propagate through the existing structured error path.
+- Siemens `SETAL` alarm handling is separated from the general Siemens built-in command handler.
+
+### Fixed
+- Preserved FANUC parenthesized alarm messages while continuing to discard ordinary FANUC comments.
+- Added Siemens `SETAL` alarm-number range validation for `65000` through `69999` and explicit errors for malformed syntax.
+
+---
+
 ## [0.1.1] - 2026-07-28
 
 ### Added

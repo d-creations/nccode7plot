@@ -56,6 +56,11 @@ class TestNCCommandParser(unittest.TestCase):
         node = self.parser.parse("#501=0.2(SUREPAISSEUR DRESSAGE)")
         self.assertIn("#501=0.2", node.variable_command)
 
+    def test_fanuc_macro_alarm_message_is_preserved(self):
+        node = self.parser.parse("#3000 = 1 (ALARM MESSAGE)", line_nr=12)
+        self.assertEqual(node.variable_command, "#3000 = 1 (ALARM MESSAGE)")
+        self.assertEqual(node.nc_code_line_nr, 12)
+
     def test_siemens_multi_letter_commands(self):
         node = self.parser.parse("NEWCONF\nCOMPCAD\nTRAFOOF")
         self.assertEqual(node.command_parameter, {})
@@ -113,7 +118,7 @@ class TestNCCommandParser(unittest.TestCase):
         self.assertEqual(end.command_parameter, {})
 
     def test_siemens_transformation_and_builtin_commands_are_masked(self):
-        for source in ["TRAORI", "TRAFOOF", "SETAL(62111)", "RET"]:
+        for source in ["TRAORI", "TRAFOOF", "SETAL(65000)", "RET"]:
             with self.subTest(source=source):
                 node = self.parser.parse(source)
                 self.assertEqual(node.variable_command, source)
@@ -121,9 +126,14 @@ class TestNCCommandParser(unittest.TestCase):
                 self.assertEqual(node.g_code, set())
 
     def test_siemens_setal_preserves_trailing_alarm_text(self):
-        node = self.parser.parse("SETAL(62111);failure to reach the touch point")
-        self.assertEqual(node.variable_command, "SETAL(62111);failure to reach the touch point")
+        node = self.parser.parse("SETAL(65000);failure to reach the touch point")
+        self.assertEqual(node.variable_command, "SETAL(65000);failure to reach the touch point")
         self.assertEqual(node.command_parameter, {})
+
+    def test_siemens_setal_preserves_quoted_alarm_text(self):
+        node = self.parser.parse('SETAL(65001,"Axis distance too small")', line_nr=8)
+        self.assertEqual(node.variable_command, 'SETAL(65001,"Axis distance too small")')
+        self.assertEqual(node.nc_code_line_nr, 8)
 
     def test_siemens_getexet_is_kept_as_whole_command(self):
         node = self.parser.parse("GETEXET(Custom_T_AKT,Custom_THNR)")
