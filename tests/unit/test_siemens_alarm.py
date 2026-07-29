@@ -26,17 +26,20 @@ class TestSiemensAlarm(unittest.TestCase):
         self.assertEqual(state.extra["alarms"], [{"code": 65001, "message": "Axis distance too small", "line": 2}])
         self.assertNotIn("2", state.parameters)
 
-    def test_setal_rejects_alarm_number_outside_user_range(self):
-        state = CNCState(machine_config=get_machine_config("SIEMENS_840DI"))
+    def test_setal_accepts_configured_alarm_numbers_outside_user_alarm_range(self):
         parser = SiemensCommandParser()
-        control = UniversalConfigDrivenControl(init_nc_states=[state])
 
-        with self.assertRaises(ExceptionNode) as caught:
-            control.run_nc_code_list([parser.parse("SETAL(64999)", 4)], 1)
+        for alarm_code in (1000, 70000):
+            with self.subTest(alarm_code=alarm_code):
+                state = CNCState(machine_config=get_machine_config("SIEMENS_840DI"))
+                control = UniversalConfigDrivenControl(init_nc_states=[state])
 
-        self.assertEqual(caught.exception.typ, ExceptionTyps.NCCodeErrors)
-        self.assertIn("65000 and 69999", caught.exception.message)
-        self.assertNotIn("alarms", state.extra)
+                with self.assertRaises(ExceptionNode) as caught:
+                    control.run_nc_code_list([parser.parse(f"SETAL({alarm_code})", 4)], 1)
+
+                self.assertEqual(caught.exception.typ, ExceptionTyps.CNCError)
+                self.assertEqual(caught.exception.code, alarm_code)
+                self.assertEqual(state.extra["alarms"], [{"code": alarm_code, "message": "", "line": 4}])
 
     def test_setal_rejects_malformed_alarm_text(self):
         state = CNCState(machine_config=get_machine_config("SIEMENS_840DI"))

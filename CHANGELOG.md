@@ -24,7 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - Preserved FANUC parenthesized alarm messages while continuing to discard ordinary FANUC comments.
-- Added Siemens `SETAL` alarm-number range validation for `65000` through `69999` and explicit errors for malformed syntax.
+- Added Siemens `SETAL` alarm-number validation and explicit errors for malformed syntax while allowing configured alarm numbers outside the standard user-alarm range.
 
 ---
 

@@ -40,11 +40,11 @@ class SiemensAlarmHandler(Handler):
             )
 
         code = int(float(self._evaluator.evaluate(match.group(1), state)))
-        if not 65000 <= code <= 69999:
+        if code < 0:
             raise_nc_error(
                 ExceptionTyps.NCCodeErrors,
                 code,
-                message="SETAL alarm number must be between 65000 and 69999",
+                message="SETAL alarm number must not be negative",
                 value=code,
                 line=node.nc_code_line_nr or 0,
             )
