@@ -26,6 +26,19 @@ class TestFanucAlarm(unittest.TestCase):
         self.assertEqual(state.extra["alarms"], [{"code": 3007, "message": "TOOL NOT FOUND", "line": 2}])
         self.assertNotIn("101", state.parameters)
 
+    def test_m99_stops_before_unreached_alarm(self):
+        state = CNCState(machine_config=get_machine_config("FANUC_MILL"))
+        control = UniversalConfigDrivenControl(init_nc_states=[state])
+        lexer = FanucProgramLexer()
+        parser = FanucCommandParser()
+        program = "#1=1\nIF[#1=2]GOTO200\nM99\nN200\n#3000=1(TEST)"
+        nodes = [parser.parse(statement.text, statement.line) for statement in lexer.lex(program)]
+
+        control.run_nc_code_list(nodes, 1)
+
+        self.assertNotIn("alarms", state.extra)
+        self.assertNotIn(nodes[-1], control.get_exected_nodes(1))
+
 
 if __name__ == "__main__":
     unittest.main()

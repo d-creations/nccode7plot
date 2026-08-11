@@ -84,6 +84,16 @@ def test_cycle_end_siemens_start_label_fallback(siemens_config):
     handler.handle(node, state)
     assert node._next_ncCode is None
 
+def test_cycle_end_siemens_m30_stops_execution(siemens_config):
+    handler = CycleEnd()
+    state = CNCState(machine_config=siemens_config)
+    node = NCCommandNode(command_parameter={"M": "30"})
+    node._next_ncCode = NCCommandNode()
+
+    handler.handle(node, state)
+
+    assert node._next_ncCode is None
+
 def test_cycle_end_extracts_feed_and_spindle(fanuc_config):
     handler = CycleEnd()
     state = CNCState()

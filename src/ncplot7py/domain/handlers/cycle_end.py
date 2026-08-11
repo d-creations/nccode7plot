@@ -19,6 +19,12 @@ class CycleEnd(Handler):
         if config is None:
             return
 
+        control_type = str(getattr(config, "control_type", "")).upper()
+        m_code = str(node.command_parameter.get("M", "")).strip()
+        if (control_type == "FANUC" and m_code == "99") or (control_type == "SIEMENS" and m_code == "30"):
+            node._next_ncCode = None
+            return
+
         cycle_start_code = getattr(config, "cycle_start_code", "").strip().upper()
         if not cycle_start_code:
             return

@@ -13,6 +13,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.1.3] - 2026-08-11
 
+### Fixed
+- Fixed FANUC `M99` failing to terminate program execution, which could incorrectly execute later blocks such as unreachable `#3000` alarms.
+- Fixed Siemens `M30` failing to terminate execution before subsequent program blocks.
+
+
 ### Added
 - Added separate G96/G97 speed-mode handlers for FANUC Turn, FANUC Mill, and Siemens controls.
 - Added configurable `g96_reference_axis` machine settings and Siemens `SCC[axis]` runtime reference-axis selection.
