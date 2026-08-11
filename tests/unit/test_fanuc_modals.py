@@ -1,4 +1,5 @@
 import unittest
+import math
 
 from ncplot7py.infrastructure.machines.base_stateful_control import UniversalConfigDrivenCanal as UniversalConfigDrivenCanal
 from ncplot7py.domain.machines import get_machine_config
@@ -72,6 +73,55 @@ class TestFanucModals(unittest.TestCase):
         self.assertIn('feed_mode', cstate.extra)
         val = cstate.extra['feed_mode']
         self.assertTrue(val == FeedMode.FEED_PER_REV or val == FeedMode.FEED_PER_REV.value)
+
+    def test_g96_g99_duration_uses_x_diameter(self):
+        cstate = CNCState(); cstate.machine_config = get_machine_config("FANUC_TURN")
+        canal = UniversalConfigDrivenCanal('C1', init_state=cstate)
+        nodes = [
+            NCCommandNode(g_code_command={'G0'}, command_parameter={'X': '100'}),
+            NCCommandNode(g_code_command={'G96', 'G99', 'G1'}, command_parameter={'Z': '-100', 'S': '200', 'F': '0.2'}),
+        ]
+
+        canal.run_nc_code_list(nodes)
+
+        _points, duration = canal.get_tool_path()[-1]
+        expected_rpm = 1000.0 * 200.0 / (math.pi * 100.0)
+        self.assertAlmostEqual(duration, 100.0 / (0.2 * expected_rpm / 60.0))
+
+    def test_g96_face_cut_uses_average_x_diameter(self):
+        cstate = CNCState(); cstate.machine_config = get_machine_config("FANUC_TURN")
+        canal = UniversalConfigDrivenCanal('C1', init_state=cstate)
+        nodes = [
+            NCCommandNode(g_code_command={'G0'}, command_parameter={'X': '100'}),
+            NCCommandNode(g_code_command={'G96', 'G99', 'G1'}, command_parameter={'X': '50', 'S': '200', 'F': '0.2'}),
+        ]
+
+        canal.run_nc_code_list(nodes)
+
+        _points, duration = canal.get_tool_path()[-1]
+        expected_rpm = 1000.0 * 200.0 / (math.pi * 75.0)
+        self.assertAlmostEqual(duration, 25.0 / (0.2 * expected_rpm / 60.0))
+
+    def test_g50_s_caps_g96_without_becoming_commanded_speed(self):
+        cstate = CNCState(); cstate.machine_config = get_machine_config("FANUC_TURN")
+        canal = UniversalConfigDrivenCanal("C1", init_state=cstate)
+
+        canal.run_nc_code_list([NCCommandNode(g_code_command={"G50"}, command_parameter={"S": "1000"})])
+
+        self.assertIsNone(cstate.spindle_speed)
+        self.assertEqual(cstate.extra["spindle_speed_maximum"], 1000.0)
+
+        nodes = [
+            NCCommandNode(g_code_command={"G0"}, command_parameter={"X": "100"}),
+            NCCommandNode(
+                g_code_command={"G1", "G96", "G99"},
+                command_parameter={"Z": "-100", "S": "400", "F": "0.2"},
+            ),
+        ]
+        canal.run_nc_code_list(nodes)
+
+        _points, duration = canal.get_tool_path()[-1]
+        self.assertAlmostEqual(duration, 30.0)
 
 
 if __name__ == '__main__':

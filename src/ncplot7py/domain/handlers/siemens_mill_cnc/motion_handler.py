@@ -178,7 +178,7 @@ class SiemensMotionHandler(Handler):
             next_position = dict(current)
             next_position[axis] = end.get(axis, current.get(axis, 0.0))
             distance = self._axis_travel(axis, current, next_position, state)
-            feed_mm_s = self._motion_helper._get_rapid_mm_s(state) if rapid else self._motion_helper._get_feed_mm_s(state)
+            feed_mm_s = self._motion_helper._get_rapid_mm_s(state) if rapid else self._motion_helper._get_feed_mm_s(state, current, next_position)
             if feed_mm_s > 0.0:
                 total_duration += distance / feed_mm_s
             points.append(self._point_from_axes(next_position))

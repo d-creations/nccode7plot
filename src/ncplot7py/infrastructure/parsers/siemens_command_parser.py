@@ -88,6 +88,9 @@ class SiemensCommandParser(BaseNCCommandParser):
         if is_siemens_anchor or is_siemens_anchor_with_text:
             return NCCommandNode(variable_command=unmask_text(siemens_statement), nc_code_line_nr=line_nr)
 
+        siemens_special_parameter = r"\b(?:SCC\s*\[[^\]]+\]|LIMS(?:\s*\[\s*\d+\s*\])?\s*=\s*[^\s;]+)"
+        nc_line = re.sub(siemens_special_parameter, mask_match, nc_line, flags=re.IGNORECASE)
+
         siemens_pattern = r"(?:\b|(?<=\d))(CYCLE\d+|POCKET\d+|HOLES\d+|SLOT\d+|LONGHOLE|WORKPIECE|MCALL|REPEAT|MSG|SETAL|STOPRE|NEWCONF|COMPCAD|TRAORI|TRAFOOF|TRANS|ATRANS|ROT|AROT|FRAME|NULLPUNKT|RET|GETEXET|CP|PTP|PTPG0|FFWON|FFWOF|DIAMON|DIAMOF|DIAM90)\b(?:\s*\([^)]*\))?"
         nc_line = re.sub(siemens_pattern, mask_match, nc_line, flags=re.IGNORECASE)
 
@@ -182,6 +185,9 @@ class SiemensCommandParser(BaseNCCommandParser):
                         line=line_nr or 0,
                         source_line=nc_command_string,
                     )
+            elif re.match(r"^S\d+=", code, re.IGNORECASE):
+                key, value = code.split("=", 1)
+                axis_coordinate_dict[key.upper()] = "=" + value
             elif re.match(r"^[A-Z][0-9]+=", code):
                 if var_calculation_str:
                     var_calculation_str += " " + code

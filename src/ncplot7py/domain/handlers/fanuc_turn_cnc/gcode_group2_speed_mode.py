@@ -20,8 +20,8 @@ class SpeedMode(Enum):
     CONSTANT_REV = "CONSTANT_REV"  # G97
 
 
-class GCodeGroup2SpeedModeExecChainLink(Handler):
-    """Handle G96/G97 surface speed modal codes.
+class FanucTurnSpeedModeHandler(Handler):
+    """Handle Fanuc Turn G96/G97 surface speed modal codes.
 
     Behavior:
     - If both G96 and G97 are present in the same node an NC error is raised.
@@ -69,4 +69,7 @@ class GCodeGroup2SpeedModeExecChainLink(Handler):
         return None, None
 
 
-__all__ = ["GCodeGroup2SpeedModeExecChainLink", "SpeedMode"]
+GCodeGroup2SpeedModeExecChainLink = FanucTurnSpeedModeHandler
+
+
+__all__ = ["FanucTurnSpeedModeHandler", "GCodeGroup2SpeedModeExecChainLink", "SpeedMode"]

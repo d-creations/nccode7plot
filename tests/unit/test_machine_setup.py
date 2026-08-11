@@ -3,6 +3,9 @@ from unittest.mock import mock_open, patch
 
 from ncplot7py.domain.cnc_state import CNCState
 from ncplot7py.domain import machines
+from ncplot7py.domain.handlers.fanuc_mill_cnc.gcode_speed_mode import FanucMillSpeedModeHandler
+from ncplot7py.domain.handlers.fanuc_turn_cnc.gcode_group2_speed_mode import FanucTurnSpeedModeHandler
+from ncplot7py.domain.handlers.siemens_mill_cnc.speed_handler import SiemensISOSpeedHandler
 from ncplot7py.domain.machines import MachineConfig, get_machine_config, get_machine_regex_patterns
 from ncplot7py.infrastructure.machines.base_stateful_control import HANDLER_REGISTRY, UniversalConfigDrivenCanal
 
@@ -56,6 +59,11 @@ class TestMachineSetup(unittest.TestCase):
 
         self.assertEqual(custom_turn.rapid_feed_rate, 1200.0)
 
+    def test_fanuc_and_siemens_define_g96_reference_axis(self):
+        for machine_name in ["FANUC_TURN", "FANUC_MILL", "SIEMENS_840DI"]:
+            with self.subTest(machine=machine_name):
+                self.assertEqual(get_machine_config(machine_name).g96_reference_axis, "X")
+
     def test_load_machine_configs_prefers_package_local_config(self):
         mocked_open = mock_open(read_data='{}')
 
@@ -90,6 +98,25 @@ class TestMachineSetup(unittest.TestCase):
         self.assertEqual(
             HANDLER_REGISTRY["spindle_speed"],
             ("ncplot7py.domain.handlers.modal", "ModalHandler"),
+        )
+
+    def test_speed_mode_handlers_are_control_specific(self):
+        cases = [
+            ("FANUC_TURN", FanucTurnSpeedModeHandler),
+            ("FANUC_MILL", FanucMillSpeedModeHandler),
+            ("SIEMENS_840DI", SiemensISOSpeedHandler),
+        ]
+
+        for machine_name, expected_handler in cases:
+            with self.subTest(machine=machine_name):
+                state = CNCState(machine_config=get_machine_config(machine_name))
+                canal = UniversalConfigDrivenCanal("C1", init_state=state)
+
+                self.assertIsNotNone(canal._get_handler(expected_handler))
+
+        self.assertEqual(
+            HANDLER_REGISTRY["siemens_iso_speed"],
+            ("ncplot7py.domain.handlers.siemens_mill_cnc.speed_handler", "SiemensISOSpeedHandler"),
         )
         self.assertEqual(
             HANDLER_REGISTRY["wait_code"],

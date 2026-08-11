@@ -13,6 +13,7 @@
       "control_flow",
       "tool_handler",
       "precheck",
+      "fanuc_turn_spindle_limit",
       "modal",
       "group_0_coordinate_set",
       "group_2_speed_mode",
@@ -45,6 +46,7 @@
     "diameter_axes": [
       "X"
     ],
+    "g96_reference_axis": "X",
     "syntax_rules": [
       {
         "token": "comment.line.modifier",
@@ -125,6 +127,7 @@
       "control_flow",
       "tool_handler",
       "precheck",
+      "fanuc_turn_spindle_limit",
       "modal",
       "group_21_polar",
       "group_0_coordinate_set",
@@ -158,6 +161,7 @@
       "X",
       "Y"
     ],
+    "g96_reference_axis": "X",
     "syntax_rules": [
       {
         "token": "comment.line.modifier",
@@ -238,6 +242,7 @@
       "control_flow",
       "tool_handler",
       "precheck",
+      "fanuc_turn_spindle_limit",
       "modal",
       "group_16_plane",
       "group_21_polar",
@@ -268,6 +273,7 @@
     "diameter_axes": [
       "X"
     ],
+    "g96_reference_axis": "X",
     "syntax_rules": [
       {
         "token": "comment.line.modifier",
@@ -380,6 +386,7 @@
     "c_axis_shortest_path": true,
     "polar_interpolate_axis": "Y",
     "diameter_axes": [],
+    "g96_reference_axis": "X",
     "syntax_rules": [
       {
         "token": "comment.line.modifier",
@@ -470,6 +477,7 @@
       "siemens_named_cycles",
       "siemens_iso_cycles",
       "siemens_iso_feed",
+      "siemens_iso_speed",
       "siemens_plane",
       "siemens_iso_polar",
       "tool_handler",
@@ -501,6 +509,7 @@
     "c_axis_shortest_path": false,
     "polar_interpolate_axis": "Y",
     "diameter_axes": [],
+    "g96_reference_axis": "X",
     "syntax_rules": [
       {
         "token": "comment.line.modifier",

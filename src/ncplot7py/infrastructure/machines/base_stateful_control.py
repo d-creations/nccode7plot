@@ -243,7 +243,8 @@ HANDLER_REGISTRY = {
     
     # Generic & Fanuc
     "group_0_coordinate_set": ("ncplot7py.domain.handlers.fanuc_turn_cnc.gcode_group0_coordinate_set", "GCodeGroup0CoordinateSetExecChainLink"),
-    "group_2_speed_mode": ("ncplot7py.domain.handlers.fanuc_turn_cnc.gcode_group2_speed_mode", "GCodeGroup2SpeedModeExecChainLink"),
+    "fanuc_turn_spindle_limit": ("ncplot7py.domain.handlers.fanuc_turn_cnc.spindle_limit_handler", "FanucTurnSpindleLimitHandler"),
+    "group_2_speed_mode": ("ncplot7py.domain.handlers.fanuc_turn_cnc.gcode_group2_speed_mode", "FanucTurnSpeedModeHandler"),
     "group_5_feed_mode": ("ncplot7py.domain.handlers.fanuc_turn_cnc.gcode_group5_feed_mode", "GCodeGroup5FeedModeExecChainLink"),
     "group_16_plane": ("ncplot7py.domain.handlers.fanuc_turn_cnc.gcode_group16_plane", "GCodeGroup16PlaneExecChainLink"),
     "group_21_polar": ("ncplot7py.domain.handlers.fanuc_turn_cnc.gcode_group21_polar_co", "GCodeGroup21PolarCoExecChainLink"),
@@ -273,6 +274,7 @@ HANDLER_REGISTRY = {
     "siemens_named_cycles": ("ncplot7py.domain.handlers.siemens_mill_cnc.cycles_handler", "SiemensNamedCyclesHandler"),
     "siemens_iso_cycles": ("ncplot7py.domain.handlers.siemens_mill_cnc.cycles_handler", "SiemensISOCyclesHandler"),
     "siemens_iso_feed": ("ncplot7py.domain.handlers.siemens_mill_cnc.feed_handler", "SiemensISOFeedHandler"),
+    "siemens_iso_speed": ("ncplot7py.domain.handlers.siemens_mill_cnc.speed_handler", "SiemensISOSpeedHandler"),
     "siemens_plane": ("ncplot7py.domain.handlers.siemens_mill_cnc.gcode_group6_plane", "SiemensGroup6PlaneHandler"),
     "siemens_iso_polar": ("ncplot7py.domain.handlers.siemens_mill_cnc.polar_handler", "SiemensISOPolarHandler"),
     "siemens_iso_tool_length": ("ncplot7py.domain.handlers.siemens_mill_cnc.tool_length_handler", "SiemensISOToolLengthHandler"),

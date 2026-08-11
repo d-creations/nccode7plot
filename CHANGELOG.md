@@ -11,6 +11,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.1.3] - 2026-08-11
+
+### Added
+- Added separate G96/G97 speed-mode handlers for FANUC Turn, FANUC Mill, and Siemens controls.
+- Added configurable `g96_reference_axis` machine settings and Siemens `SCC[axis]` runtime reference-axis selection.
+- Added Siemens G93 inverse-time feed and G961/G962/G971/G972/G973 constant-cutting-speed variants.
+- Added FANUC Turn and STAR `G50 S...` maximum spindle-speed clamps.
+- Added Siemens `G25` minimum, `G26` maximum, and indexed spindle-speed limits.
+- Added Siemens `LIMS` spindle-speed limiting independently of persistent G25/G26 limits.
+
+### Changed
+- Constant-cutting-speed timing now derives effective RPM from cutting speed and the configured or programmed reference-axis diameter.
+- Feed-per-revolution timing now applies controller-specific minimum and maximum spindle-speed limits.
+- Siemens G96/G97 variants now select or preserve G94/G95 feed modes according to Siemens semantics.
+
+### Fixed
+- Fixed G96 cutting speed being interpreted directly as RPM during machining-time calculation.
+- Fixed Siemens speed modes incorrectly reusing the FANUC Turn handler.
+- Fixed Siemens `SCC[...]`, `LIMS=...`, and indexed spindle-limit parsing.
+- Fixed G973 incorrectly inheriting an active `LIMS` clamp.
+
+---
+
 ## [0.1.2] - 2026-07-29
 
 ### Added

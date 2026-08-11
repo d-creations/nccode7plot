@@ -10,16 +10,16 @@ from ncplot7py.domain.cnc_state import CNCState
 
 
 class FeedMode(Enum):
+    INVERSE_TIME = "INVERSE_TIME"  # G93
     FEED_PER_MIN = "FEED_PER_MIN"  # G94
     FEED_PER_REV = "FEED_PER_REV"  # G95
 
 
 class SiemensISOFeedHandler(Handler):
-    """Handle G94 (Feed per min) and G95 (Feed per rev)."""
+    """Handle Siemens G93 inverse time, G94 per minute, and G95 per revolution."""
 
     def handle(self, node: NCCommandNode, state: CNCState) -> Tuple[Optional[List], Optional[float]]:
-        has_g94 = False
-        has_g95 = False
+        selected_mode = None
 
         for g in node.g_code:
             if not isinstance(g, str):
@@ -32,15 +32,16 @@ class SiemensISOFeedHandler(Handler):
             except Exception:
                 continue
 
-            if gnum == 94:
-                has_g94 = True
+            if gnum == 93:
+                selected_mode = FeedMode.INVERSE_TIME
+            elif gnum == 94:
+                selected_mode = FeedMode.FEED_PER_MIN
             elif gnum == 95:
-                has_g95 = True
+                selected_mode = FeedMode.FEED_PER_REV
 
-        if has_g94:
-            state.extra["feed_mode"] = FeedMode.FEED_PER_MIN
-        if has_g95:
-            state.extra["feed_mode"] = FeedMode.FEED_PER_REV
+        if selected_mode is not None:
+            state.extra["feed_mode"] = selected_mode
+            state.extra["surface_speed_mode"] = "CONSTANT_REV"
 
         if self.next_handler is not None:
             return self.next_handler.handle(node, state)

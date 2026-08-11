@@ -26,17 +26,21 @@ class FanucMillSpeedModeHandler(Handler):
         has97 = False
         
         for g in node.g_code:
-            if not isinstance(g, str): continue
+            if not isinstance(g, str):
+                continue
             try:
                 g_upper = g.upper()
                 if g_upper.startswith("G"):
-                    gnum = int(g_upper[1:3])
-                else: continue
+                    gnum = int(g_upper[1:])
+                else:
+                    continue
             except Exception:
                 continue
 
-            if gnum == 96: has96 = True
-            if gnum == 97: has97 = True
+            if gnum == 96:
+                has96 = True
+            if gnum == 97:
+                has97 = True
 
         if has96 and has97:
             raise_nc_error(ExceptionTyps.NCCodeErrors, 100, message="Conflicting surface speed codes G96 and G97", value=str(node.g_code))

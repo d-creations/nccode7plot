@@ -30,6 +30,7 @@ class MachineConfig:
     c_axis_shortest_path: bool = False
     polar_interpolate_axis: str = "Y"
     diameter_axes: Tuple[str, ...] = ()
+    g96_reference_axis: Optional[str] = None
     rotary_axis_planes: Dict[str, str] = field(default_factory=lambda: {"A": "YZ", "B": "XZ", "C": "XY"})
     seventh_axis_name: Optional[str] = None
     seventh_axis_maps_to: Optional[str] = None
@@ -83,6 +84,7 @@ def load_machine_configs():
                     c_axis_shortest_path=val.get('c_axis_shortest_path', False),
                     polar_interpolate_axis=val.get('polar_interpolate_axis', 'Y'),
                     diameter_axes=tuple(val.get('diameter_axes', [])),
+                    g96_reference_axis=val.get('g96_reference_axis'),
                     rotary_axis_planes=dict(val.get('rotary_axis_planes', {"A": "YZ", "B": "XZ", "C": "XY"})),
                     seventh_axis_name=val.get('seventh_axis_name'),
                     seventh_axis_maps_to=val.get('seventh_axis_maps_to'),

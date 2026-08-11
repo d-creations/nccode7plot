@@ -162,8 +162,7 @@ class MotionHandler(Handler):
             rapid_mm_s = self._get_rapid_mm_s(state)
             duration = dist / rapid_mm_s if rapid_mm_s > 0 else 0.0
         else:
-            feed_mm_s = self._get_feed_mm_s(state)
-            duration = dist / feed_mm_s if feed_mm_s > 0 else 0.0
+            duration = self._get_feed_duration(dist, state, start, end)
 
         points: List[Point] = []
         # include explicit start point so joins between segments preserve
@@ -334,8 +333,7 @@ class MotionHandler(Handler):
             n = min_n_by_angle
 
         # duration using feed rate (see linear routine for comments)
-        feed_mm_s = self._get_feed_mm_s(state)
-        duration = motion_length / feed_mm_s if feed_mm_s > 0 else 0.0
+        duration = self._get_feed_duration(motion_length, state, start, end)
 
         points: List[Point] = []
         points.append(Point(x=start.get("X", 0.0), y=start.get("Y", 0.0), z=start.get("Z", 0.0),
@@ -475,30 +473,82 @@ class MotionHandler(Handler):
             return center_x + rel_x * cos_a - rel_z * sin_a, y, center_z + rel_x * sin_a + rel_z * cos_a
         return center_x + rel_x * cos_a - rel_y * sin_a, center_y + rel_x * sin_a + rel_y * cos_a, z
 
-    def _get_feed_mm_s(self, state: CNCState) -> float:
+    def _get_feed_mm_s(
+        self,
+        state: CNCState,
+        start: Optional[Dict[str, float]] = None,
+        end: Optional[Dict[str, float]] = None,
+    ) -> float:
         feed = state.feed_rate or 1.0
-        feed_mode = None
-        try:
-            feed_mode = getattr(state, "extra", {}).get("feed_mode", None)
-        except Exception:
-            feed_mode = None
+        extra = getattr(state, "extra", {})
+        feed_mode = extra.get("feed_mode") if isinstance(extra, dict) else None
+        feed_mode_value = getattr(feed_mode, "value", feed_mode)
 
         effective_feed_mm_per_min = float(feed)
-        try:
-            from ncplot7py.domain.handlers.fanuc_turn_cnc.gcode_group5_feed_mode import FeedMode
-
-            if feed_mode == FeedMode.FEED_PER_REV or feed_mode == FeedMode.FEED_PER_REV.value:
-                rpm = float(state.spindle_speed or 1.0)
-                effective_feed_mm_per_min = float(feed) * rpm
-        except Exception:
-            try:
-                if feed_mode == "FEED_PER_REV":
-                    rpm = float(state.spindle_speed or 1.0)
-                    effective_feed_mm_per_min = float(feed) * rpm
-            except Exception:
-                effective_feed_mm_per_min = float(feed)
+        if feed_mode_value == "FEED_PER_REV":
+            rpm = float(state.spindle_speed or 1.0)
+            speed_mode = extra.get("surface_speed_mode") if isinstance(extra, dict) else None
+            if getattr(speed_mode, "value", speed_mode) == "CONSTANT_CUTSPEED":
+                diameter = self._get_average_cutting_diameter(state, start, end)
+                if diameter > 0.0:
+                    rpm = (1000.0 * rpm) / (math.pi * diameter)
+            spindle_limit = extra.get("spindle_speed_limit") if isinstance(extra, dict) else None
+            limit_active = extra.get("spindle_speed_limit_active", False) if isinstance(extra, dict) else False
+            if spindle_limit is not None and limit_active:
+                rpm = min(rpm, float(spindle_limit))
+            spindle_maximum = extra.get("spindle_speed_maximum") if isinstance(extra, dict) else None
+            if spindle_maximum is not None:
+                rpm = min(rpm, float(spindle_maximum))
+            spindle_minimum = extra.get("spindle_speed_minimum") if isinstance(extra, dict) else None
+            if spindle_minimum is not None:
+                rpm = max(rpm, float(spindle_minimum))
+            effective_feed_mm_per_min = float(feed) * rpm
 
         return effective_feed_mm_per_min / 60.0
+
+    def _get_feed_duration(
+        self,
+        distance: float,
+        state: CNCState,
+        start: Optional[Dict[str, float]] = None,
+        end: Optional[Dict[str, float]] = None,
+    ) -> float:
+        extra = getattr(state, "extra", {})
+        feed_mode = extra.get("feed_mode") if isinstance(extra, dict) else None
+        if getattr(feed_mode, "value", feed_mode) == "INVERSE_TIME":
+            feed = float(state.feed_rate or 0.0)
+            return 60.0 / feed if feed > 0.0 else 0.0
+        feed_mm_s = self._get_feed_mm_s(state, start, end)
+        return distance / feed_mm_s if feed_mm_s > 0.0 else 0.0
+
+    def _get_average_cutting_diameter(
+        self,
+        state: CNCState,
+        start: Optional[Dict[str, float]],
+        end: Optional[Dict[str, float]],
+    ) -> float:
+        extra = getattr(state, "extra", {})
+        runtime_axis = extra.get("g96_reference_axis") if isinstance(extra, dict) else None
+        configured_axis = getattr(getattr(state, "machine_config", None), "g96_reference_axis", None)
+        reference_axis = str(runtime_axis or configured_axis or "").strip().upper()
+        if not reference_axis:
+            configured_axes = list(getattr(getattr(state, "machine_config", None), "diameter_axes", ()) or ())
+            diameter_axes = [str(axis).upper() for axis in configured_axes]
+            if not diameter_axes:
+                diameter_axes = [axis for axis in state.axes if state.is_axis_diameter(axis)]
+            reference_axis = diameter_axes[0] if diameter_axes else ""
+        if not reference_axis:
+            return 0.0
+
+        axis = reference_axis
+        start_radius = float((start or state.axes).get(axis, state.get_axis(axis)))
+        end_radius = float((end or state.axes).get(axis, start_radius))
+        if start_radius * end_radius < 0.0:
+            travel = abs(end_radius - start_radius)
+            average_radius = (start_radius * start_radius + end_radius * end_radius) / (2.0 * travel)
+        else:
+            average_radius = (abs(start_radius) + abs(end_radius)) / 2.0
+        return 2.0 * average_radius
 
     def _get_rapid_mm_s(self, state: CNCState) -> float:
         try:
