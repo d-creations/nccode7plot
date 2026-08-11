@@ -17,8 +17,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed FANUC `M99` failing to terminate program execution, which could incorrectly execute later blocks such as unreachable `#3000` alarms.
 - Fixed Siemens `M30` failing to terminate execution before subsequent program blocks.
 
-
 ### Added
+- Added `FANUC_STAR_x-D_y-R_z_R.M.S` and `FANUC_STAR_x-D_y-D_z_R.M.S` controls for STAR two-channel programs using `.M` for the main channel and `.S` for the secondary channel.
 - Added separate G96/G97 speed-mode handlers for FANUC Turn, FANUC Mill, and Siemens controls.
 - Added configurable `g96_reference_axis` machine settings and Siemens `SCC[axis]` runtime reference-axis selection.
 - Added Siemens G93 inverse-time feed and G961/G962/G971/G972/G973 constant-cutting-speed variants.

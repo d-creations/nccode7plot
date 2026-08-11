@@ -228,6 +228,227 @@
       }
     }
   },
+  "FANUC_STAR_x-D_y-R_z_R.M.S": {
+    "name": "FANUC_STAR_x-D_y-R_z_R.M.S",
+    "control_type": "FANUC",
+    "parser_name": "fanuc",
+    "lexer_name": "fanuc",
+    "machine_type": "TURN_MILL",
+    "channels": 2,
+    "synchronization_strategy": "STAR_WAIT",
+    "supported_gcode_groups": [
+      "fanuc_alarm",
+      "variable",
+      "control_flow",
+      "tool_handler",
+      "precheck",
+      "fanuc_turn_spindle_limit",
+      "modal",
+      "group_0_coordinate_set",
+      "group_2_speed_mode",
+      "group_5_feed_mode",
+      "group_16_plane",
+      "group_21_polar",
+      "cornering",
+      "wait_code",
+      "spindle_speed",
+      "cycle_end",
+      "motion"
+    ],
+    "variable_pattern": "#(\\d+)",
+    "variable_prefix": "#",
+    "tool_range": [
+      0,
+      99
+    ],
+    "cycle_start_code": "M20",
+    "default_plane": "G18",
+    "default_feed_mode": "FEED_PER_REV",
+    "rapid_feed_rate": 20000.0,
+    "a_axis_rollover": false,
+    "b_axis_rollover": false,
+    "c_axis_rollover": true,
+    "a_axis_shortest_path": false,
+    "b_axis_shortest_path": false,
+    "c_axis_shortest_path": true,
+    "polar_interpolate_axis": "Y",
+    "diameter_axes": [
+      "X"
+    ],
+    "g96_reference_axis": "X",
+    "syntax_rules": [
+      {
+        "token": "comment.line.modifier",
+        "regex": "^\\s*\\/.*"
+      },
+      {
+        "token": "comment",
+        "regex": "\\([^)]*\\)"
+      },
+      {
+        "token": "string.quoted.double",
+        "regex": "\"[^\"]*\""
+      },
+      {
+        "token": "keyword.control",
+        "regex": "\\b(?:GOTO|IF|WHILE|DO|END)\\b"
+      },
+      {
+        "token": "support.function",
+        "regex": "\\b(?:SQRT|ASIN|ACOS|ATAN|SIN|COS|TAN|ABS|BIN|BCD|ROUND|FIX|FUP)\\b"
+      },
+      {
+        "token": "keyword.operator",
+        "regex": "[\\+\\-\\*\\/=]"
+      },
+      {
+        "token": "variable.parameter",
+        "regex": "#(\\d+)"
+      },
+      {
+        "token": "constant.language.gcode",
+        "regex": "[Gg]\\s*\\d+(?:\\.\\d+)?"
+      },
+      {
+        "token": "constant.language.mcode",
+        "regex": "[Mm]\\s*\\d+(?:\\.\\d+)?"
+      },
+      {
+        "token": [
+          "entity.name.tag",
+          "constant.numeric"
+        ],
+        "regex": "([A-Z])(\\s*[+-]?\\d+(?:\\.\\d+)?)"
+      }
+    ],
+    "max_execution_nodes": 50000,
+    "file_extensions": {
+      "multifile": true,
+      "main": [
+        ".M"
+      ],
+      "subprogram": [],
+      "channels": {
+        "1": [
+          ".M"
+        ],
+        "2": [
+          ".S"
+        ]
+      }
+    }
+  },
+  "FANUC_STAR_x-D_y-D_z_R.M.S": {
+    "name": "FANUC_STAR_x-D_y-D_z_R.M.S",
+    "control_type": "FANUC",
+    "parser_name": "fanuc",
+    "lexer_name": "fanuc",
+    "machine_type": "TURN_MILL",
+    "channels": 2,
+    "synchronization_strategy": "STAR_WAIT",
+    "supported_gcode_groups": [
+      "fanuc_alarm",
+      "variable",
+      "control_flow",
+      "tool_handler",
+      "precheck",
+      "fanuc_turn_spindle_limit",
+      "modal",
+      "group_21_polar",
+      "group_0_coordinate_set",
+      "group_2_speed_mode",
+      "group_5_feed_mode",
+      "group_16_plane",
+      "cornering",
+      "wait_code",
+      "spindle_speed",
+      "cycle_end",
+      "motion"
+    ],
+    "variable_pattern": "#(\\d+)",
+    "variable_prefix": "#",
+    "tool_range": [
+      0,
+      99
+    ],
+    "cycle_start_code": "M20",
+    "default_plane": "G18",
+    "default_feed_mode": "FEED_PER_REV",
+    "rapid_feed_rate": 20000.0,
+    "a_axis_rollover": false,
+    "b_axis_rollover": false,
+    "c_axis_rollover": true,
+    "a_axis_shortest_path": false,
+    "b_axis_shortest_path": false,
+    "c_axis_shortest_path": true,
+    "polar_interpolate_axis": "Y",
+    "diameter_axes": [
+      "X",
+      "Y"
+    ],
+    "g96_reference_axis": "X",
+    "syntax_rules": [
+      {
+        "token": "comment.line.modifier",
+        "regex": "^\\s*\\/.*"
+      },
+      {
+        "token": "comment",
+        "regex": "\\([^)]*\\)"
+      },
+      {
+        "token": "string.quoted.double",
+        "regex": "\"[^\"]*\""
+      },
+      {
+        "token": "keyword.control",
+        "regex": "\\b(?:GOTO|IF|WHILE|DO|END)\\b"
+      },
+      {
+        "token": "support.function",
+        "regex": "\\b(?:SQRT|ASIN|ACOS|ATAN|SIN|COS|TAN|ABS|BIN|BCD|ROUND|FIX|FUP)\\b"
+      },
+      {
+        "token": "keyword.operator",
+        "regex": "[\\+\\-\\*\\/=]"
+      },
+      {
+        "token": "variable.parameter",
+        "regex": "#(\\d+)"
+      },
+      {
+        "token": "constant.language.gcode",
+        "regex": "[Gg]\\s*\\d+(?:\\.\\d+)?"
+      },
+      {
+        "token": "constant.language.mcode",
+        "regex": "[Mm]\\s*\\d+(?:\\.\\d+)?"
+      },
+      {
+        "token": [
+          "entity.name.tag",
+          "constant.numeric"
+        ],
+        "regex": "([A-Z])(\\s*[+-]?\\d+(?:\\.\\d+)?)"
+      }
+    ],
+    "max_execution_nodes": 50000,
+    "file_extensions": {
+      "multifile": true,
+      "main": [
+        ".M"
+      ],
+      "subprogram": [],
+      "channels": {
+        "1": [
+          ".M"
+        ],
+        "2": [
+          ".S"
+        ]
+      }
+    }
+  },
   "FANUC_TURN": {
     "name": "FANUC_TURN",
     "control_type": "FANUC",

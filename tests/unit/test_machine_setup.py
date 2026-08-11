@@ -100,6 +100,22 @@ class TestMachineSetup(unittest.TestCase):
             ("ncplot7py.domain.handlers.modal", "ModalHandler"),
         )
 
+    def test_star_m_s_machine_configs_define_channel_extensions_and_diameter_axes(self):
+        cases = [
+            ("FANUC_STAR_x-D_y-R_z_R.M.S", ("X",)),
+            ("FANUC_STAR_x-D_y-D_z_R.M.S", ("X", "Y")),
+        ]
+
+        for machine_name, expected_diameter_axes in cases:
+            with self.subTest(machine=machine_name):
+                config = get_machine_config(machine_name)
+
+                self.assertEqual(config.name, machine_name)
+                self.assertEqual(config.diameter_axes, expected_diameter_axes)
+                self.assertEqual(config.channels, 2)
+                self.assertEqual(config.file_extensions["main"], [".M"])
+                self.assertEqual(config.file_extensions["channels"], {"1": [".M"], "2": [".S"]})
+
     def test_speed_mode_handlers_are_control_specific(self):
         cases = [
             ("FANUC_TURN", FanucTurnSpeedModeHandler),
