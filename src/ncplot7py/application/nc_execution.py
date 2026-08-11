@@ -389,10 +389,26 @@ class NCExecutionEngine:
                         y.append(getattr(point, "y", None))
                         z.append(getattr(point, "z", None))
                 line_number = None
+                motion_geometry = None
+                motion_traversal = None
+                motion_source_code = None
                 if canal_index < len(nodes) and len(nodes[canal_index]) > len(lines):
-                    line_number = getattr(nodes[canal_index][len(lines)], "nc_code_line_nr", None)
+                    motion_node = nodes[canal_index][len(lines)]
+                    line_number = getattr(motion_node, "nc_code_line_nr", None)
+                    motion_geometry = getattr(motion_node, "motion_geometry", None)
+                    motion_traversal = getattr(motion_node, "motion_traversal", None)
+                    motion_source_code = getattr(motion_node, "motion_source_code", None)
 
-                lines.append({"x": x, "y": y, "z": z, "t": t, "lineNumber": line_number})
+                lines.append({
+                    "x": x,
+                    "y": y,
+                    "z": z,
+                    "t": t,
+                    "lineNumber": line_number,
+                    "geometry": motion_geometry,
+                    "traversal": motion_traversal,
+                    "sourceCode": motion_source_code,
+                })
                 try:
                     runtime += float(t)
                 except Exception:

@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Added CGI segment `geometry`, `traversal`, and `sourceCode` metadata for rapid, linear, clockwise-arc, and counterclockwise-arc motions.
+
+### Fixed
+- Fixed configured G0 movements with nonzero duration being returned as normal linear-feed segments.
+
 ---
 
 ## [0.1.3] - 2026-08-11

@@ -38,6 +38,9 @@ class NCCommandNode(BaseNCCommandNode):
         self._variable_command = variable_command
         self._dddp_command: Set[str] = set(dddp_command or [])
         self._nc_code_line_nr: Optional[int] = nc_code_line_nr
+        self._motion_geometry: Optional[str] = None
+        self._motion_traversal: Optional[str] = None
+        self._motion_source_code: Optional[str] = None
 
         # Optional pointers for linked-list style containers
         self._next_ncCode: Optional["NCCommandNode"] = None
@@ -68,6 +71,23 @@ class NCCommandNode(BaseNCCommandNode):
     def nc_code_line_nr(self) -> Optional[int]:
         return self._nc_code_line_nr
 
+    @property
+    def motion_geometry(self) -> Optional[str]:
+        return self._motion_geometry
+
+    @property
+    def motion_traversal(self) -> Optional[str]:
+        return self._motion_traversal
+
+    @property
+    def motion_source_code(self) -> Optional[str]:
+        return self._motion_source_code
+
+    def set_motion_metadata(self, geometry: str, traversal: str, source_code: str) -> None:
+        self._motion_geometry = geometry
+        self._motion_traversal = traversal
+        self._motion_source_code = source_code
+
     def __str__(self) -> str:
         parts = ["NC COMMAND: "]
         if self.g_code:
@@ -97,6 +117,9 @@ class NCCommandNode(BaseNCCommandNode):
         )
         node._next_ncCode = self._next_ncCode
         node._before_ncCode = self._before_ncCode
+        node._motion_geometry = self._motion_geometry
+        node._motion_traversal = self._motion_traversal
+        node._motion_source_code = self._motion_source_code
         return node
 
     def __del__(self) -> None:

@@ -57,6 +57,8 @@ class SiemensMotionHandler(Handler):
 
             points, duration = self._ptp_interpolate(start, resolved, state, rapid=interp_mode == "G00")
             state.update_axes(resolved)
+            traversal = "RAPID" if interp_mode == "G00" else "FEED"
+            node.set_motion_metadata("LINEAR", traversal, interp_mode)
             return self._motion_helper._transform_points_for_plot(points, state), duration
         finally:
             for axis, unit in previous_axis_units.items():

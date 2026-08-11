@@ -32,10 +32,12 @@ def test_ptp_consumes_linear_motion_as_dogleg():
     handler = make_handler(CaptureMotionHandler())
 
     handler.handle(NCCommandNode(variable_command="PTP"), state)
-    points, duration = handler.handle(NCCommandNode(g_code_command={"G1"}, command_parameter={"X": "10", "Y": "5"}), state)
+    node = NCCommandNode(g_code_command={"G1"}, command_parameter={"X": "10", "Y": "5"})
+    points, duration = handler.handle(node, state)
 
     assert duration == pytest.approx(15.0)
     assert [(point.x, point.y) for point in points] == [(0.0, 0.0), (10.0, 0.0), (10.0, 5.0)]
+    assert (node.motion_geometry, node.motion_traversal, node.motion_source_code) == ("LINEAR", "FEED", "G01")
     assert state.get_axis("X") == pytest.approx(10.0)
     assert state.get_axis("Y") == pytest.approx(5.0)
 
@@ -49,9 +51,11 @@ def test_ptpg0_only_consumes_rapid_moves():
 
     handler.handle(NCCommandNode(variable_command="PTPG0"), state)
     calls_after_mode = capture.calls
-    rapid_points, _ = handler.handle(NCCommandNode(g_code_command={"G0"}, command_parameter={"X": "10", "Y": "5"}), state)
+    rapid_node = NCCommandNode(g_code_command={"G0"}, command_parameter={"X": "10", "Y": "5"})
+    rapid_points, _ = handler.handle(rapid_node, state)
     assert capture.calls == calls_after_mode
     assert [(point.x, point.y) for point in rapid_points] == [(0.0, 0.0), (10.0, 0.0), (10.0, 5.0)]
+    assert (rapid_node.motion_geometry, rapid_node.motion_traversal, rapid_node.motion_source_code) == ("LINEAR", "RAPID", "G00")
 
     handler.handle(NCCommandNode(g_code_command={"G1"}, command_parameter={"X": "20", "Y": "10"}), state)
     assert capture.calls == calls_after_mode + 1

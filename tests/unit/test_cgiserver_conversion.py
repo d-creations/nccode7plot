@@ -52,6 +52,91 @@ class TestCgiServerConversion(unittest.TestCase):
         self.assertEqual(result["timing"], [2.5])
         self.assertEqual(result["lineTiming"], {"10": 2.5})
 
+    def test_segment_type_uses_motion_metadata_instead_of_duration(self):
+        cgiserver = _load_cgiserver_module()
+
+        result = cgiserver.build_segments_from_engine_output(
+            {
+                "plot": [
+                    {
+                        "x": [0.0, 1.0],
+                        "y": [0.0, 0.0],
+                        "z": [0.0, 0.0],
+                        "t": 0.25,
+                        "geometry": "LINEAR",
+                        "traversal": "RAPID",
+                        "sourceCode": "G00",
+                    },
+                    {
+                        "x": [1.0, 2.0],
+                        "y": [0.0, 1.0],
+                        "z": [0.0, 0.0],
+                        "t": 0.5,
+                        "geometry": "ARC_CW",
+                        "traversal": "FEED",
+                        "sourceCode": "G02",
+                    },
+                ]
+            }
+        )
+
+        rapid, arc = result["segments"]
+        self.assertEqual(rapid["type"], "RAPID")
+        self.assertEqual(rapid["geometry"], "LINEAR")
+        self.assertEqual(rapid["traversal"], "RAPID")
+        self.assertEqual(arc["type"], "ARC_CW")
+        self.assertEqual(arc["sourceCode"], "G02")
+
+    def test_explicitly_unknown_motion_semantics_do_not_infer_type_from_duration(self):
+        cgiserver = _load_cgiserver_module()
+
+        result = cgiserver.build_segments_from_engine_output(
+            {
+                "plot": [
+                    {
+                        "x": [0.0, 0.0, 0.0],
+                        "y": [0.0, 0.0, 0.0],
+                        "z": [2.0, -5.0, 10.0],
+                        "t": 0.0,
+                        "geometry": None,
+                        "traversal": None,
+                        "sourceCode": None,
+                    }
+                ]
+            }
+        )
+
+        segment = result["segments"][0]
+        self.assertEqual(segment["type"], "UNKNOWN")
+        self.assertIsNone(segment["geometry"])
+        self.assertIsNone(segment["traversal"])
+
+    def test_execute_program_preserves_explicit_and_modal_motion_metadata(self):
+        cgiserver = _load_cgiserver_module()
+
+        result = cgiserver.handle_execute_programs(
+            [
+                {
+                    "program": "G0 X10 Y0\nX20\nG1 X30 F600\nG2 X40 Y10 R10\nG3 X50 Y0 R10",
+                    "machineName": "FANUC_MILL",
+                    "canalNr": "1",
+                }
+            ]
+        )
+
+        segments = result["canal"]["1"]["segments"]
+        self.assertEqual(
+            [(segment["geometry"], segment["traversal"], segment["sourceCode"]) for segment in segments],
+            [
+                ("LINEAR", "RAPID", "G00"),
+                ("LINEAR", "RAPID", "G00"),
+                ("LINEAR", "FEED", "G01"),
+                ("ARC_CW", "FEED", "G02"),
+                ("ARC_CCW", "FEED", "G03"),
+            ],
+        )
+        self.assertEqual([segment["type"] for segment in segments], ["RAPID", "RAPID", "LINEAR", "ARC_CW", "ARC_CCW"])
+
     def test_variable_only_siemens_program_does_not_fall_back_to_mock(self):
         cgiserver = _load_cgiserver_module()
 

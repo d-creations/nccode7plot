@@ -116,6 +116,15 @@ class MotionHandler(Handler):
         else:
             return super().handle(node, state)
 
+        geometry = {
+            "G00": "LINEAR",
+            "G01": "LINEAR",
+            "G02": "ARC_CW",
+            "G03": "ARC_CCW",
+        }[interp_mode]
+        traversal = "RAPID" if interp_mode == "G00" else "FEED"
+        node.set_motion_metadata(geometry, traversal, interp_mode)
+
         # update state axes to endpoint
         state.update_axes(resolved)
 

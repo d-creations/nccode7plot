@@ -132,8 +132,24 @@ def build_segments_from_engine_output(canal_output: Dict[str, Any]) -> Dict[str,
             pz = z[i] if i < len(z) else (z[-1] if len(z) > 0 else 0)
             points.append({"x": px, "y": py, "z": pz})
 
+        has_motion_semantics = "geometry" in entry or "traversal" in entry
+        geometry = entry.get("geometry")
+        traversal = entry.get("traversal")
+        source_code = entry.get("sourceCode")
+        if traversal == "RAPID":
+            segment_type = "RAPID"
+        elif geometry:
+            segment_type = geometry
+        elif has_motion_semantics:
+            segment_type = "UNKNOWN"
+        else:
+            segment_type = "RAPID" if (not t or float(t) == 0) else "LINEAR"
+
         seg = {
-            "type": "RAPID" if (not t or float(t) == 0) else "LINEAR",
+            "type": segment_type,
+            "geometry": geometry,
+            "traversal": traversal,
+            "sourceCode": source_code,
             "lineNumber": entry.get("lineNumber") if entry.get("lineNumber") is not None else (executed_node_lines[idx] if idx < len(executed_node_lines) else None),
             "toolNumber": 1,
             "points": points,
@@ -196,6 +212,9 @@ def mock_parse_nc_program(program: str, machine_name: str) -> Dict[str, Any]:
             # Create segment
             segment = {
                 "type": "RAPID" if line.startswith('G0') else "LINEAR",
+                "geometry": "LINEAR",
+                "traversal": "RAPID" if line.startswith('G0') else "FEED",
+                "sourceCode": "G0" if line.startswith('G0') else "G1",
                 "lineNumber": i + 1,
                 "toolNumber": 1,
                 "points": [

@@ -82,6 +82,28 @@ On success, a JSON object similar to:
 - Each canal result includes `variables` for numeric register variables and `namedVariables` for Siemens named variables and flattened array elements such as `ANGLE_Z` and `CUSTOM_MC[3]`.
 - `message` is the project's message stack (diagnostics/info accumulated during processing).
 
+Each item in a canal's `segments` list includes motion semantics separately from timing:
+
+```json
+{
+  "type": "RAPID",
+  "geometry": "LINEAR",
+  "traversal": "RAPID",
+  "sourceCode": "G00",
+  "lineNumber": 10,
+  "toolNumber": 1,
+  "points": [{"x": 0.0, "y": 0.0, "z": 0.0}]
+}
+```
+
+- `geometry` is `LINEAR`, `ARC_CW`, or `ARC_CCW` when known.
+- `traversal` is `RAPID` or `FEED` when known.
+- `sourceCode` is the effective modal interpolation code (`G00`, `G01`, `G02`, or `G03`) when known.
+- `type` remains the compatibility display value: `RAPID` for rapid traversal, otherwise the geometry value. It is `UNKNOWN` when the engine marks a generated path as having no single motion classification.
+- The semantic fields can be `null` for legacy engine output or compound generated paths that do not have one motion classification.
+- Compound cycle paths currently remain one points/duration entry, so clients should render `UNKNOWN` as an unclassified continuous path rather than infer rapid/feed from duration.
+- Duration is not used to classify segments when semantic metadata is present.
+
 On error, the script returns a JSON-like error message such as:
 
 {"message_TEST": "<error>", "program": [ ... ]}
