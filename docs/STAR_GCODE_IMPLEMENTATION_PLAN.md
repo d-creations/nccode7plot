@@ -66,7 +66,7 @@ description; use the command section and option availability for implementation.
 | `G43.5` | 3D/5-axis tool compensation token | Not implemented | Separate optional 5-axis link; do not combine with lathe nose compensation. |
 | `G50` | Spindle limit / coordinate setting | Partial | Existing links cover basic coordinate rewrite and spindle limit; separate the semantics and validate arguments. |
 | `G65`, `G66`, `G67` | Custom macro call / modal call / cancel | Not implemented | Reuse macro execution only after call-stack and modal-call semantics are specified. |
-| `G68.1`, `G69.1` | 3D coordinate conversion / cancel | Not implemented | Add a transform-stack link and enforce Star incompatibilities. |
+| `G68.1`, `G69.1` (`G69` Star alias) | Planar coordinate-system rotation / cancel | Implemented | `FanucCoordinateRotationHandler` rotates absolute program coordinates and arc offsets in `G17/G18/G19`, enforces restrictions, and delegates classified geometry. |
 | `G75` | FANUC outer/inner diameter drilling cycle | Not implemented | Implement canonical FANUC geometry, then validate Star restrictions. |
 | `G76` | FANUC two-block multiple threading cycle | Implemented | `FanucG76ThreadingCycleHandler` validates setup/cutting blocks, schedules rough/finish depths, and emits classified pass primitives. |
 | `G80`, `G83`, `G84`, `G85`, `G87`, `G89` | Drilling, tapping, boring cycles | Implemented | `FanucTurnDrillingCycleHandler` expands modal cycles into classified `G00` rapid and `G01` feed primitives; further machine alarm restrictions can be layered on it. |
@@ -78,7 +78,7 @@ description; use the command section and option availability for implementation.
 | `G112`, `G113` | Polar interpolation / cancel | Implemented / partial | `group_21_polar` covers transformation; add Star mode and conflict validation. |
 | `G117`, `G118`, `G119` | Manual-reference tokens; exact function to verify | Not implemented | Hold until the command section identifies exact semantics. |
 | `G125`, `G130`, `G131`, `G132`, `G133` | Star automatic coordinate setting | Partial | `StarAutomaticCoordinateHandler` validates formats and sequence state; proprietary coordinate formulas remain missing. |
-| `G161` | Star Step Cycle Pro | Recognized only | Add an option-gated chip-break cycle; enforce `G97`, `G99`, and `M41` prerequisites. |
+| `G161` | Star Step Cycle Pro | Partial | `StarG161StepCycleHandler` validates `X/Y/Z A F D Q`, executes the net endpoint as `LINEAR/FEED/G161`, and stores cycle parameters. Detailed amplitude oscillation remains unavailable. |
 | `G164`, `G165` | Star eccentric machining cycle | Recognized only | Add option-gated cycle behavior; validate `A`/`B`, `C`/`D`, speed, and allowed words. |
 | `G170`-`G174` | Star machine modes / path restrictions | Recognized only | Implement modal mode state first; commands must be isolated blocks. |
 | `G180`, `G181` | Star power-driven-tool operation | Recognized only | Add tool/spindle state, then implement `T`, `S`, and `L` requirements. |
@@ -88,7 +88,8 @@ description; use the command section and option availability for implementation.
 | `G300` | Star-reserved/auxiliary command | Recognized only | Replace the current no-op with documented behavior or an unsupported diagnostic. |
 | `G553`, `G561` | Manual-reference tokens; exact function to verify | Not implemented | Do not infer semantics from alarm references. |
 | `G784`, `G884`, `G984` | Star cut-off process cycles | Recognized only | Implement independent cycle links with axis-specific formats and coolant/tool checks. |
-| `G900`, `G910`, `G920` | Star B1-axis tilting / setup | Recognized only | Add B-axis setup state, tool-range, modal, and single-block validation. |
+| `G900` | Star B1-axis setup | Recognized only | Requires its command description before implementation. |
+| `G910`, `G920` | Star B1-axis tilting 1/2 | Partial | `StarB1TiltingHandler` validates runtime state, indexes B, emits drawing metadata, and stores explicit X/Z references. Proprietary automatic tool-offset formulas remain unavailable. |
 | `G990`, `G991` | Star B-axis machining / related operation | Recognized only | Add mode and transformation links after `G900/G910/G920`, enforcing alarm preconditions. |
 
 ## Baseline Comparison
@@ -167,9 +168,12 @@ The following work was completed on 2026-08-12 and is covered by focused tests:
 | FANUC turn | `fanuc_g92_threading` | `fanuc_turn_cnc/g92_threading_cycle.py` | Modal straight/taper `G92` cycle with classified rapid/thread primitives. |
 | FANUC turn | `fanuc_g76_threading` | `fanuc_turn_cnc/g76_threading_cycle.py` | Two-block `G76`, implied decimals, rough-pass scheduling, and finishing passes. |
 | FANUC turn | `fanuc_g36_circular_threading` | `fanuc_turn_cnc/g36_circular_threading.py` | Option-gated CCW circular threading with `G36` source metadata. |
+| FANUC turn | `fanuc_coordinate_rotation` | `fanuc_turn_cnc/coordinate_rotation_handler.py` | `G68.1/G69.1`, selected-plane rotation, restrictions, arc-offset rotation, and Star `G69` alias. |
 | Star | `star_spindle_fluctuation` | `star_machine/spindle_fluctuation_handler.py` | `G25/G26` monitoring state and conflict validation. |
 | Star | `star_automatic_coordinate` | `star_machine/automatic_coordinate_handler.py` | `G125/G130-G133` formats, prerequisites, and state sequence. |
 | Star | `star_g266` | `star_machine/g266_handler.py` | `G266` allowed/required words, numeric validation, and known variable mapping. |
+| Star | `star_b1_tilting` | `star_machine/b1_tilting_handler.py` | Guarded `G910/G920` B1 rapid indexing and explicit tilted-coordinate reference state. |
+| Star | `star_g161_step_cycle` | `star_machine/g161_step_cycle_handler.py` | Option-gated `G161`, `X/Y/Z` endpoint movement, `A/D` range checks, feed/spindle timing, and `LINEAR/FEED/G161` output. |
 | Star compatibility | Not configured | `star_machine/star_turn_handler.py` | Facade only; delegates to the separate Star modules. |
 
 The machine configuration now explicitly selects control-specific tool and
@@ -179,7 +183,7 @@ M-code modules as well: `fanuc_tool_handler`, `fanuc_turn_mcode_modal`,
 `star_turn` injection has been removed, so handler ownership and order are
 visible in each machine profile.
 
-Verification after the current handler work: `251 passed, 25 subtests passed` for the full
+Verification after the current handler work: `268 passed, 25 subtests passed` for the full
 `tests/` suite.
 
 ## How a G-Code Must Execute
@@ -279,24 +283,26 @@ compare calculated coordinate origins against machine examples.
 the confirmed block contract is:
 
 ```text
-G161 A... F... D... Q...
+G161 X... Y... Z... A... F... D... Q...
 ```
 
-- Allowed words are exactly `A`, `F`, `D`, and `Q`.
+- At least one `X`, `Y`, or `Z` endpoint is required.
+- `A` is the amplitude setting and accepts `1` through `5`.
+- `D` is the spindle rotations per amplitude and accepts `1` through `5`.
+- `F` is the positive feedrate and `Q` is the positive motor-strength setting.
 - It requires feed-per-revolution (`G99`), fixed RPM (`G97`, therefore not
    `G96`), and `M41` mode.
 - It needs the Step Cycle Pro option when running in MACHINING mode.
 
-Implement an initially conservative executor:
+Implemented executor:
 
 1. Validate options and all modal prerequisites before mutating state.
-2. Validate the exact word set and numeric ranges from the programming manual.
-3. Store a typed `StepCycleParameters` object under `star.cycle.step_cycle`.
-4. If the manual specifies a motion pattern, expand it into alternating cut and
-    retract primitives. Until that pattern is documented, return a structured
-    “geometry unavailable” error after validation rather than inventing a path.
-5. Test valid setup plus one test for each confirmed rejection: `G96`, `G98`,
-    `M40`, missing option, and an extra word.
+2. Validate endpoint and numeric parameter ranges.
+3. Store typed Step Cycle parameters under `star.g161`.
+4. Execute the net start-to-end move using `F` in `G99` mode and emit
+   `LINEAR/FEED/G161` drawing metadata.
+5. Preserve `physical_cycle_path_available: false`: the net path is correct,
+   but the undocumented forward/back amplitude oscillations are not expanded.
 
 ### Eccentric Cycle: `G164/G165`
 

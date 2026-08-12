@@ -45,6 +45,7 @@ class BaseToolHandler:
                     )
 
             state.extra["current_tool_number"] = tool_number
+            state.extra["current_tool_code"] = t_val
             self._load_tool_compensation(tool_number, t_val, state)
         except ValueError:
             t_name = t_str.replace('"', "").replace("'", "")

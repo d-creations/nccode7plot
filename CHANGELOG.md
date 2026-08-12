@@ -9,16 +9,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+---
+
+## [0.1.4] - 2026-08-12
+
 ### Added
 - Added CGI segment `geometry`, `traversal`, and `sourceCode` metadata for rapid, linear, clockwise-arc, and counterclockwise-arc motions.
 - Added machine-specific modal M-code handlers for FANUC Mill, FANUC Turn, STAR, and Siemens Mill controls.
+- Added separate FANUC Turn handlers for `G20/G21` units, `G80/G83/G84/G85/G87/G89` drilling cycles, `G92` threading, two-block `G76` multiple threading, optional `G36` circular threading, and `G68.1/G69.1` coordinate rotation.
+- Added separate STAR handlers for `G25/G26` spindle fluctuation monitoring, `G125/G130-G133` automatic-coordinate state, validated `G266` setup, `G910/G920` B1 tilting, and option-gated `G161` Step Cycle Pro.
+- Added machine capability settings for circular threading and Step Cycle Pro.
+- Added classified primitive expansion for canned drilling and threading cycles so rapid, feed, linear, and arc phases remain distinguishable in CGI drawing output.
 
 ### Changed
 - FANUC Turn and STAR `M3`/`M4` commands now return the C-axis to zero; STAR `M9` retains its C-axis return behavior.
 - Spindle direction, coolant mode, and Siemens `M82`/`M83` probe state are now managed by the corresponding machine-specific M-code handler.
+- Machine profiles now explicitly select control-specific tool, M-code, FANUC Turn, and STAR handlers instead of relying on implicit STAR handler injection.
+- STAR `G161` now validates `X/Y/Z A F D Q`, enforces `G97`, `G99`, `M41`, and option prerequisites, and emits a timed `LINEAR/FEED/G161` net endpoint path.
+- FANUC and STAR generated cycle movements now retain their original source code and editor line number after expansion into drawing segments.
+- STAR `G69` is accepted as the machine-specific alias for FANUC `G69.1` coordinate-rotation cancellation.
 
 ### Fixed
 - Fixed configured G0 movements with nonzero duration being returned as normal linear-feed segments.
+- Fixed compound canned-cycle paths being returned as a single unclassified `UNKNOWN` drawing segment.
+- Removed the obsolete backward-compatible generic `ToolHandler` import; tests and machine profiles now use explicit FANUC or STAR tool handlers.
+- Added documented format, modal-state, option, path-mode, tool-range, and numeric-range validation for the implemented FANUC Turn and STAR G-codes.
 
 ---
 

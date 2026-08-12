@@ -34,7 +34,10 @@ class FanucTurnUnitHandler(Handler):
             state.set_modal("units", "G21")
 
         if state.get_modal("units") == "G20":
-            for word in self.LINEAR_WORDS.intersection(node.command_parameter):
+            linear_words = set(self.LINEAR_WORDS)
+            if any(str(code).strip().upper() == "G68.1" for code in node.g_code):
+                linear_words.discard("R")
+            for word in linear_words.intersection(node.command_parameter):
                 try:
                     node.command_parameter[word] = str(float(node.command_parameter[word]) * 25.4)
                 except (TypeError, ValueError):

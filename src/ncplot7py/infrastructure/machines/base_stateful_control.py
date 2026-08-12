@@ -38,6 +38,8 @@ class BaseStatefulCanal(BaseNCCanalInterface):
     def __init__(self, name: str, init_state: Optional[CNCState] = None):
         self._name = name
         self._state = init_state or CNCState()
+        match = re.search(r"(\d+)$", str(name))
+        self._state.extra.setdefault("path_number", int(match.group(1)) if match else 1)
         self._chain = None
         self._control_handler = None
         self._nodes: List[NCCommandNode] = []
@@ -270,6 +272,7 @@ HANDLER_REGISTRY = {
     "fanuc_g92_threading": ("ncplot7py.domain.handlers.fanuc_turn_cnc.g92_threading_cycle", "FanucG92ThreadingCycleHandler"),
     "fanuc_g76_threading": ("ncplot7py.domain.handlers.fanuc_turn_cnc.g76_threading_cycle", "FanucG76ThreadingCycleHandler"),
     "fanuc_g36_circular_threading": ("ncplot7py.domain.handlers.fanuc_turn_cnc.g36_circular_threading", "FanucG36CircularThreadingHandler"),
+    "fanuc_coordinate_rotation": ("ncplot7py.domain.handlers.fanuc_turn_cnc.coordinate_rotation_handler", "FanucCoordinateRotationHandler"),
     "fanuc_turn_drilling_cycles": ("ncplot7py.domain.handlers.fanuc_turn_cnc.drilling_cycle_handler", "FanucTurnDrillingCycleHandler"),
     "group_2_speed_mode": ("ncplot7py.domain.handlers.fanuc_turn_cnc.gcode_group2_speed_mode", "FanucTurnSpeedModeHandler"),
     "group_5_feed_mode": ("ncplot7py.domain.handlers.fanuc_turn_cnc.gcode_group5_feed_mode", "GCodeGroup5FeedModeExecChainLink"),
@@ -290,6 +293,8 @@ HANDLER_REGISTRY = {
     "star_spindle_fluctuation": ("ncplot7py.domain.handlers.star_machine.spindle_fluctuation_handler", "StarSpindleFluctuationHandler"),
     "star_automatic_coordinate": ("ncplot7py.domain.handlers.star_machine.automatic_coordinate_handler", "StarAutomaticCoordinateHandler"),
     "star_g266": ("ncplot7py.domain.handlers.star_machine.g266_handler", "StarG266Handler"),
+    "star_b1_tilting": ("ncplot7py.domain.handlers.star_machine.b1_tilting_handler", "StarB1TiltingHandler"),
+    "star_g161_step_cycle": ("ncplot7py.domain.handlers.star_machine.g161_step_cycle_handler", "StarG161StepCycleHandler"),
     "star_turn": ("ncplot7py.domain.handlers.star_machine.star_turn_handler", "StarTurnHandler"),
     
     # Siemens Specific

@@ -13,6 +13,7 @@ class TestToolHandler(unittest.TestCase):
         StarFanucToolHandler().handle(NCCommandNode(command_parameter={"T": "0400"}), state)
 
         self.assertEqual(state.extra["current_tool_number"], 4)
+        self.assertEqual(state.extra["current_tool_code"], 400)
 
     def test_star_t400_is_interpreted_as_tool_four_with_offset_zero(self):
         state = CNCState(machine_config=get_machine_config("FANUC_STAR_x-D_y-D_z_R.M.S"))

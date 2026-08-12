@@ -32,6 +32,7 @@ class MachineConfig:
     diameter_axes: Tuple[str, ...] = ()
     g96_reference_axis: Optional[str] = None
     circular_threading_enabled: bool = False
+    step_cycle_pro_enabled: bool = False
     rotary_axis_planes: Dict[str, str] = field(default_factory=lambda: {"A": "YZ", "B": "XZ", "C": "XY"})
     seventh_axis_name: Optional[str] = None
     seventh_axis_maps_to: Optional[str] = None
@@ -87,6 +88,7 @@ def load_machine_configs():
                     diameter_axes=tuple(val.get('diameter_axes', [])),
                     g96_reference_axis=val.get('g96_reference_axis'),
                     circular_threading_enabled=val.get('circular_threading_enabled', False),
+                    step_cycle_pro_enabled=val.get('step_cycle_pro_enabled', False),
                     rotary_axis_planes=dict(val.get('rotary_axis_planes', {"A": "YZ", "B": "XZ", "C": "XY"})),
                     seventh_axis_name=val.get('seventh_axis_name'),
                     seventh_axis_maps_to=val.get('seventh_axis_maps_to'),
