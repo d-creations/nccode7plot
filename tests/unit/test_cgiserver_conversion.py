@@ -24,6 +24,19 @@ def _load_cgiserver_module():
 
 
 class TestCgiServerConversion(unittest.TestCase):
+    def test_line_alignment_syntax_describes_fanuc_and_siemens(self):
+        cgiserver = _load_cgiserver_module()
+
+        result = cgiserver.handle_get_line_alignment_syntax()
+
+        self.assertTrue(result["success"])
+        fanuc, siemens = result["lineAlignmentSyntax"]
+        self.assertEqual(fanuc["waitCodeRange"], {"min": 200, "max": 899})
+        self.assertEqual(fanuc["twoChannel"]["example"], {"channel1": "M200", "channel2": "M200"})
+        self.assertEqual(fanuc["threeChannel"]["selectors"], ["P12", "P13", "P23", "P123"])
+        self.assertEqual(siemens["syntax"], "WAITM(<marker>)")
+        self.assertEqual(siemens["example"], {"channel1": "WAITM(1)", "channel2": "WAITM(1)"})
+
     def test_segment_timing_uses_plot_editor_line_number(self):
         cgiserver = _load_cgiserver_module()
 

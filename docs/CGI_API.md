@@ -199,6 +199,54 @@ Response JSON body:
 
 This is useful for clients to discover supported machine names before sending processing requests.
 
+## Getting multichannel line-alignment syntax
+
+Request JSON body:
+
+```json
+{
+  "action": "get_line_alignment_syntax"
+}
+```
+
+The aliases `get_multichannel_alignment_syntax` and `get_sync_syntax` are also accepted. The response contains structured syntax for:
+
+- Two-channel FANUC alignment using the same `M200` through `M899` code in both channels.
+- Three-channel FANUC alignment using the same M code plus `P12`, `P13`, `P23`, or `P123` in each participating channel.
+- Siemens alignment using the same `WAITM(<marker>)` value in each channel.
+
+Example response:
+
+```json
+{
+  "lineAlignmentSyntax": [
+    {
+      "controlType": "FANUC",
+      "waitCodeRange": {"min": 200, "max": 899},
+      "twoChannel": {
+        "syntax": "M<waitCode>",
+        "example": {"channel1": "M200", "channel2": "M200"}
+      },
+      "threeChannel": {
+        "syntax": "M<waitCode> P<channels>",
+        "selectors": ["P12", "P13", "P23", "P123"],
+        "example": {
+          "channel1": "M899 P123",
+          "channel2": "M899 P123",
+          "channel3": "M899 P123"
+        }
+      }
+    },
+    {
+      "controlType": "SIEMENS",
+      "syntax": "WAITM(<marker>)",
+      "example": {"channel1": "WAITM(1)", "channel2": "WAITM(1)"}
+    }
+  ],
+  "success": true
+}
+```
+
 ---
 
 Generated from `scripts/cgiserver.cgi` in the repository. If you'd like, I can also add an automated test or a small example script under `scripts/` to POST a sample request and save the response.

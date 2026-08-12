@@ -294,6 +294,39 @@ def handle_list_machines() -> Dict[str, Any]:
         "success": True,
     }
 
+def handle_get_line_alignment_syntax() -> Dict[str, Any]:
+    """Return supported multichannel wait syntax for API clients."""
+    return {
+        "lineAlignmentSyntax": [
+            {
+                "controlType": "FANUC",
+                "waitCodeRange": {"min": 200, "max": 899},
+                "twoChannel": {
+                    "syntax": "M<waitCode>",
+                    "rule": "Use the same wait code in both channels.",
+                    "example": {"channel1": "M200", "channel2": "M200"},
+                },
+                "threeChannel": {
+                    "syntax": "M<waitCode> P<channels>",
+                    "selectors": ["P12", "P13", "P23", "P123"],
+                    "rule": "Use the same wait code and selector in every participating channel.",
+                    "example": {
+                        "channel1": "M899 P123",
+                        "channel2": "M899 P123",
+                        "channel3": "M899 P123",
+                    },
+                },
+            },
+            {
+                "controlType": "SIEMENS",
+                "syntax": "WAITM(<marker>)",
+                "rule": "Use the same marker number in every channel to align.",
+                "example": {"channel1": "WAITM(1)", "channel2": "WAITM(1)"},
+            },
+        ],
+        "success": True,
+    }
+
 def handle_execute_programs(machinedata: List[Dict[str, Any]]) -> Dict[str, Any]:
     if NCExecutionEngine is None:
         return run_mock_parser(machinedata)
@@ -499,6 +532,8 @@ def main():
             action = request_data["action"]
             if action in ["list_machines", "get_machines"]:
                 response = handle_list_machines()
+            elif action in ["get_line_alignment_syntax", "get_multichannel_alignment_syntax", "get_sync_syntax"]:
+                response = handle_get_line_alignment_syntax()
             else:
                 response = {
                     "error": f"Unknown action: {action}",
