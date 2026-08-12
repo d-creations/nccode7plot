@@ -150,6 +150,34 @@ class TestMachineSetup(unittest.TestCase):
         for variable in ["R10", "$AA_MW[X]", "$P_UIFR[ORIGIN_GP]", "CUSTOM_MC[3]", "ANGLE_Z"]:
             self.assertRegex(variable, variable_pattern)
 
+    def test_fanuc_frontend_keyword_pattern_accepts_zero_padded_tools(self):
+        patterns = get_machine_regex_patterns("FANUC_STAR_x-D_y-R_z_R")
+
+        for pattern in [
+            patterns["keywords"]["pattern"],
+            patterns["keywords"]["codes"]["extended_tools"]["pattern"],
+        ]:
+            with self.subTest(pattern=pattern):
+                self.assertRegex("T500", f"^(?:{pattern})$")
+                self.assertRegex("T0500", f"^(?:{pattern})$")
+                self.assertNotRegex("T050", f"^(?:{pattern})$")
+
+    def test_frontend_regex_patterns_come_from_machine_config(self):
+        configured_patterns = {"keywords": {"pattern": "CUSTOM_KEYWORD"}}
+        machines.MACHINE_CONFIGS["CUSTOM_MACHINE"] = MachineConfig(
+            name="CUSTOM_MACHINE",
+            control_type="CUSTOM",
+            variable_pattern=r"V(\d+)",
+            variable_prefix="V",
+            tool_range=(1, 10),
+            regex_patterns=configured_patterns,
+        )
+
+        result = get_machine_regex_patterns("CUSTOM_MACHINE")
+
+        self.assertEqual(result, configured_patterns)
+        self.assertIsNot(result, configured_patterns)
+
     def test_siemens_editor_syntax_rules_include_advanced_commands_and_variables(self):
         import json
         import os
