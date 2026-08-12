@@ -9,7 +9,7 @@ from ncplot7py.shared.nc_nodes import NCCommandNode
 
 
 class FanucTurnSpindleLimitHandler(Handler):
-    """Consume G50 S as a persistent maximum spindle speed in RPM."""
+    """Handle the Fanuc turning maximum spindle-speed clamp."""
 
     def handle(self, node: NCCommandNode, state: CNCState) -> Tuple[Optional[List], Optional[float]]:
         has_g50 = any(str(code).strip().upper() in {"G50", "G050"} for code in node.g_code)

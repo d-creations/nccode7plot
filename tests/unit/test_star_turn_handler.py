@@ -1,24 +1,63 @@
 import unittest
 
 from ncplot7py.domain.cnc_state import CNCState
+from ncplot7py.domain.handlers.motion import MotionHandler
+from ncplot7py.domain.exceptions import ExceptionNode
 from ncplot7py.shared.nc_nodes import NCCommandNode
+from ncplot7py.domain.handlers.star_machine.automatic_coordinate_handler import StarAutomaticCoordinateHandler
+from ncplot7py.domain.handlers.star_machine.g266_handler import StarG266Handler
+from ncplot7py.domain.handlers.star_machine.mcode_modal import StarModalMCodeHandler
+from ncplot7py.domain.handlers.star_machine.spindle_fluctuation_handler import StarSpindleFluctuationHandler
 from ncplot7py.domain.handlers.star_machine.star_turn_handler import StarTurnHandler
 
 
 class TestStarTurnHandler(unittest.TestCase):
-    def test_g125_removes_z_parameter(self):
+    def test_g125_records_z1_coordinate_and_consumes_z_parameter(self):
         handler = StarTurnHandler()
         state = CNCState()
 
-        node = NCCommandNode(g_code_command={"G125"}, command_parameter={"Z": "10.0", "X": "5.0"})
+        node = NCCommandNode(g_code_command={"G125"}, command_parameter={"Z": "10.0"})
 
         pts, dur = handler.handle(node, state)
 
-        # handler should have removed Z but left X intact
         self.assertNotIn("Z", node.command_parameter)
-        self.assertIn("X", node.command_parameter)
+        self.assertTrue(state.extra["star.coordinate.z1_set"])
+        self.assertEqual(state.extra["star.coordinate.z1_command"], {"Z": 10.0})
         self.assertIsNone(pts)
         self.assertIsNone(dur)
+
+    def test_g125_rejects_unsupported_x_word(self):
+        handler = StarAutomaticCoordinateHandler()
+        state = CNCState()
+
+        with self.assertRaises(ExceptionNode) as error:
+            handler.handle(
+                NCCommandNode(g_code_command={"G125"}, command_parameter={"Z": "10", "X": "5"}),
+                state,
+            )
+
+        self.assertEqual(error.exception.code, 3622)
+
+    def test_automatic_coordinate_sequence_tracks_dependencies(self):
+        handler = StarAutomaticCoordinateHandler()
+        state = CNCState()
+
+        handler.handle(NCCommandNode(g_code_command={"G125"}, command_parameter={"Z": "10"}), state)
+        handler.handle(NCCommandNode(g_code_command={"G131"}, command_parameter={"B": "2"}), state)
+        handler.handle(NCCommandNode(g_code_command={"G133"}), state)
+        handler.handle(NCCommandNode(g_code_command={"G132"}), state)
+
+        self.assertTrue(state.extra["star.coordinate.pickup_set"])
+        self.assertTrue(state.extra["star.coordinate.projection_stored"])
+        self.assertTrue(state.extra["star.coordinate.path2_machining"])
+
+    def test_g131_requires_prior_g125(self):
+        handler = StarAutomaticCoordinateHandler()
+
+        with self.assertRaises(ExceptionNode) as error:
+            handler.handle(NCCommandNode(g_code_command={"G131"}), CNCState())
+
+        self.assertEqual(error.exception.code, 3630)
 
     def test_g266_maps_parameters_to_state_variables_and_pops(self):
         handler = StarTurnHandler()
@@ -73,6 +112,41 @@ class TestStarTurnHandler(unittest.TestCase):
         self.assertEqual(node.command_parameter["Z"], "5.0")
         self.assertIsNone(pts)
         self.assertIsNone(dur)
+
+    def test_g266_rejects_missing_required_word_before_mutation(self):
+        handler = StarG266Handler()
+        state = CNCState()
+        node = NCCommandNode(
+            g_code_command={"G266"},
+            command_parameter={"A": "1", "X": "2", "W": "3", "S": "4", "Z": "5", "B": "6"},
+        )
+
+        with self.assertRaises(ExceptionNode) as error:
+            handler.handle(node, state)
+
+        self.assertEqual(error.exception.code, 3686)
+        self.assertEqual(state.parameters, {})
+        self.assertIn("A", node.command_parameter)
+
+    def test_g25_and_g26_toggle_spindle_fluctuation_monitoring(self):
+        handler = StarSpindleFluctuationHandler()
+        state = CNCState()
+
+        handler.handle(NCCommandNode(g_code_command={"G26"}), state)
+        self.assertTrue(state.extra["star.spindle.fluctuation_monitoring"])
+        handler.handle(NCCommandNode(g_code_command={"G25"}), state)
+        self.assertFalse(state.extra["star.spindle.fluctuation_monitoring"])
+
+    def test_m9_returns_c_axis_to_zero_with_rapid_motion(self):
+        handler = StarModalMCodeHandler(next_handler=MotionHandler())
+        state = CNCState(axes={"X": 0.0, "Y": 0.0, "Z": 0.0, "C": 90.0})
+
+        points, duration = handler.handle(NCCommandNode(command_parameter={"M": "9"}), state)
+
+        self.assertEqual(state.get_modal("coolant_mode"), "M9")
+        self.assertEqual(state.get_axis("C"), 0.0)
+        self.assertTrue(points)
+        self.assertEqual(points[-1].c, 0.0)
 
 
 if __name__ == '__main__':

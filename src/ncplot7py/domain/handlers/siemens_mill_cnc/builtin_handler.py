@@ -47,10 +47,6 @@ class SiemensBuiltinHandler(Handler):
         elif upper in {"DIAMON", "DIAMOF", "DIAM90"}:
             scope["diameter_mode"] = upper
 
-        if str(node.command_parameter.get("M", "")) == "82":
-            scope["probe_enabled"] = True
-        elif str(node.command_parameter.get("M", "")) == "83":
-            scope["probe_enabled"] = False
         return super().handle(node, state)
 
 

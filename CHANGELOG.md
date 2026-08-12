@@ -11,6 +11,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - Added CGI segment `geometry`, `traversal`, and `sourceCode` metadata for rapid, linear, clockwise-arc, and counterclockwise-arc motions.
+- Added machine-specific modal M-code handlers for FANUC Mill, FANUC Turn, STAR, and Siemens Mill controls.
+
+### Changed
+- FANUC Turn and STAR `M3`/`M4` commands now return the C-axis to zero; STAR `M9` retains its C-axis return behavior.
+- Spindle direction, coolant mode, and Siemens `M82`/`M83` probe state are now managed by the corresponding machine-specific M-code handler.
 
 ### Fixed
 - Fixed configured G0 movements with nonzero duration being returned as normal linear-feed segments.

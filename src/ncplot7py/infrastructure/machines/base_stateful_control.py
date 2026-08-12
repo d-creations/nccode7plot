@@ -137,11 +137,27 @@ class BaseStatefulCanal(BaseNCCanalInterface):
                     logger.debug("node idx=%s -> pts=%s dur=%s", steps, 'Y' if pts is not None else 'N', dur)
 
             if pts is not None:
-                self._tool_path.append((pts, dur or 0.0))
-                try:
-                    self._tool_nodes.append(node)
-                except Exception:
-                    pass
+                generated_segments = getattr(node, "generated_motion_segments", [])
+                if generated_segments:
+                    for segment in generated_segments:
+                        segment_points = segment.get("points")
+                        if not isinstance(segment_points, list) or not segment_points:
+                            continue
+                        segment_node = node.copy()
+                        segment_node.set_motion_metadata(
+                            str(segment.get("geometry", "LINEAR")),
+                            str(segment.get("traversal", "FEED")),
+                            str(segment.get("source_code", "G01")),
+                        )
+                        segment_node.set_generated_motion_segments([])
+                        self._tool_path.append((segment_points, float(segment.get("duration", 0.0))))
+                        self._tool_nodes.append(segment_node)
+                else:
+                    self._tool_path.append((pts, dur or 0.0))
+                    try:
+                        self._tool_nodes.append(node)
+                    except Exception:
+                        pass
 
             next_node = getattr(node, "_next_ncCode", None)
             if next_node is node:
@@ -236,14 +252,25 @@ HANDLER_REGISTRY = {
     # Base
     "motion": ("ncplot7py.domain.handlers.motion", "MotionHandler"),
     "modal": ("ncplot7py.domain.handlers.modal", "ModalHandler"),
+    "fanuc_mill_mcode_modal": ("ncplot7py.domain.handlers.fanuc_mill_cnc.mcode_modal", "FanucMillModalMCodeHandler"),
+    "fanuc_turn_mcode_modal": ("ncplot7py.domain.handlers.fanuc_turn_cnc.mcode_modal", "FanucTurnModalMCodeHandler"),
+    "star_mcode_modal": ("ncplot7py.domain.handlers.star_machine.mcode_modal", "StarModalMCodeHandler"),
+    "siemens_mill_mcode_modal": ("ncplot7py.domain.handlers.siemens_mill_cnc.mcode_modal", "SiemensMillModalMCodeHandler"),
     "spindle_speed": ("ncplot7py.domain.handlers.modal", "ModalHandler"),
     "wait_code": ("ncplot7py.domain.handlers.modal", "ModalHandler"),
-    "tool_handler": ("ncplot7py.domain.handlers.tool_handler", "ToolHandler"),
+    "fanuc_tool_handler": ("ncplot7py.domain.handlers.fanuc_machine.tool_handler", "FanucToolHandler"),
+    "siemens_tool_handler": ("ncplot7py.domain.handlers.siemens_machine.tool_handler", "SiemensToolHandler"),
+    "star_fanuc_tool_handler": ("ncplot7py.domain.handlers.star_machine.tool_handler", "StarFanucToolHandler"),
     "cycle_end": ("ncplot7py.domain.handlers.cycle_end", "CycleEnd"),
     
     # Generic & Fanuc
     "group_0_coordinate_set": ("ncplot7py.domain.handlers.fanuc_turn_cnc.gcode_group0_coordinate_set", "GCodeGroup0CoordinateSetExecChainLink"),
     "fanuc_turn_spindle_limit": ("ncplot7py.domain.handlers.fanuc_turn_cnc.spindle_limit_handler", "FanucTurnSpindleLimitHandler"),
+    "fanuc_turn_units": ("ncplot7py.domain.handlers.fanuc_turn_cnc.unit_handler", "FanucTurnUnitHandler"),
+    "fanuc_g92_threading": ("ncplot7py.domain.handlers.fanuc_turn_cnc.g92_threading_cycle", "FanucG92ThreadingCycleHandler"),
+    "fanuc_g76_threading": ("ncplot7py.domain.handlers.fanuc_turn_cnc.g76_threading_cycle", "FanucG76ThreadingCycleHandler"),
+    "fanuc_g36_circular_threading": ("ncplot7py.domain.handlers.fanuc_turn_cnc.g36_circular_threading", "FanucG36CircularThreadingHandler"),
+    "fanuc_turn_drilling_cycles": ("ncplot7py.domain.handlers.fanuc_turn_cnc.drilling_cycle_handler", "FanucTurnDrillingCycleHandler"),
     "group_2_speed_mode": ("ncplot7py.domain.handlers.fanuc_turn_cnc.gcode_group2_speed_mode", "FanucTurnSpeedModeHandler"),
     "group_5_feed_mode": ("ncplot7py.domain.handlers.fanuc_turn_cnc.gcode_group5_feed_mode", "GCodeGroup5FeedModeExecChainLink"),
     "group_16_plane": ("ncplot7py.domain.handlers.fanuc_turn_cnc.gcode_group16_plane", "GCodeGroup16PlaneExecChainLink"),
@@ -260,6 +287,9 @@ HANDLER_REGISTRY = {
     "fanuc_mill_plane": ("ncplot7py.domain.handlers.fanuc_mill_cnc.gcode_group2_plane", "FanucMillGroup2PlaneHandler"),
     
     # Turn Mill Star
+    "star_spindle_fluctuation": ("ncplot7py.domain.handlers.star_machine.spindle_fluctuation_handler", "StarSpindleFluctuationHandler"),
+    "star_automatic_coordinate": ("ncplot7py.domain.handlers.star_machine.automatic_coordinate_handler", "StarAutomaticCoordinateHandler"),
+    "star_g266": ("ncplot7py.domain.handlers.star_machine.g266_handler", "StarG266Handler"),
     "star_turn": ("ncplot7py.domain.handlers.star_machine.star_turn_handler", "StarTurnHandler"),
     
     # Siemens Specific
@@ -309,13 +339,6 @@ class UniversalConfigDrivenCanal(BaseStatefulCanal):
 
         # Map groups to handler modules via dynamic imports
         config_groups = self._state.machine_config.supported_gcode_groups
-        
-        # Helper logic to inject Turn-Mill Star handler
-        if self._state.machine_config.machine_type == "TURN_MILL":
-            req = list(config_groups)
-            if "star_turn" not in req:
-                req.insert(len(req) - 1 if "motion" in req else len(req), "star_turn")
-            config_groups = tuple(req)
 
         for group in config_groups:
             if group in HANDLER_REGISTRY:

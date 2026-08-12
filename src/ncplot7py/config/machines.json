@@ -11,12 +11,15 @@
       "fanuc_alarm",
       "variable",
       "control_flow",
-      "tool_handler",
+      "star_fanuc_tool_handler",
       "precheck",
       "fanuc_turn_spindle_limit",
+      "fanuc_turn_units",
       "modal",
+      "star_mcode_modal",
       "group_0_coordinate_set",
       "group_2_speed_mode",
+      "star_spindle_fluctuation",
       "group_5_feed_mode",
       "group_16_plane",
       "group_21_polar",
@@ -24,6 +27,12 @@
       "wait_code",
       "spindle_speed",
       "cycle_end",
+      "star_automatic_coordinate",
+      "star_g266",
+      "fanuc_g92_threading",
+      "fanuc_g76_threading",
+      "fanuc_g36_circular_threading",
+      "fanuc_turn_drilling_cycles",
       "motion"
     ],
     "variable_pattern": "#(\\d+)",
@@ -47,6 +56,7 @@
       "X"
     ],
     "g96_reference_axis": "X",
+    "circular_threading_enabled": true,
     "syntax_rules": [
       {
         "token": "comment.line.modifier",
@@ -62,7 +72,7 @@
       },
       {
         "token": "keyword.control",
-        "regex": "\\b(?:GOTO|IF|WHILE|DO|END)\\b"
+        "regex": "\\b(?:GOTO|IF|WHILE|DO|END|T\\d{1,4})\\b"
       },
       {
         "token": "support.function",
@@ -125,19 +135,28 @@
       "fanuc_alarm",
       "variable",
       "control_flow",
-      "tool_handler",
+      "star_fanuc_tool_handler",
       "precheck",
       "fanuc_turn_spindle_limit",
+      "fanuc_turn_units",
       "modal",
+      "star_mcode_modal",
       "group_21_polar",
       "group_0_coordinate_set",
       "group_2_speed_mode",
+      "star_spindle_fluctuation",
       "group_5_feed_mode",
       "group_16_plane",
       "cornering",
       "wait_code",
       "spindle_speed",
       "cycle_end",
+      "star_automatic_coordinate",
+      "star_g266",
+      "fanuc_g92_threading",
+      "fanuc_g76_threading",
+      "fanuc_g36_circular_threading",
+      "fanuc_turn_drilling_cycles",
       "motion"
     ],
     "variable_pattern": "#(\\d+)",
@@ -162,6 +181,7 @@
       "Y"
     ],
     "g96_reference_axis": "X",
+    "circular_threading_enabled": true,
     "syntax_rules": [
       {
         "token": "comment.line.modifier",
@@ -177,7 +197,7 @@
       },
       {
         "token": "keyword.control",
-        "regex": "\\b(?:GOTO|IF|WHILE|DO|END)\\b"
+        "regex": "\\b(?:GOTO|IF|WHILE|DO|END|T\\d{1,4})\\b"
       },
       {
         "token": "support.function",
@@ -240,12 +260,15 @@
       "fanuc_alarm",
       "variable",
       "control_flow",
-      "tool_handler",
+      "star_fanuc_tool_handler",
       "precheck",
       "fanuc_turn_spindle_limit",
+      "fanuc_turn_units",
       "modal",
+      "star_mcode_modal",
       "group_0_coordinate_set",
       "group_2_speed_mode",
+      "star_spindle_fluctuation",
       "group_5_feed_mode",
       "group_16_plane",
       "group_21_polar",
@@ -253,6 +276,12 @@
       "wait_code",
       "spindle_speed",
       "cycle_end",
+      "star_automatic_coordinate",
+      "star_g266",
+      "fanuc_g92_threading",
+      "fanuc_g76_threading",
+      "fanuc_g36_circular_threading",
+      "fanuc_turn_drilling_cycles",
       "motion"
     ],
     "variable_pattern": "#(\\d+)",
@@ -276,6 +305,7 @@
       "X"
     ],
     "g96_reference_axis": "X",
+    "circular_threading_enabled": true,
     "syntax_rules": [
       {
         "token": "comment.line.modifier",
@@ -291,7 +321,7 @@
       },
       {
         "token": "keyword.control",
-        "regex": "\\b(?:GOTO|IF|WHILE|DO|END)\\b"
+        "regex": "\\b(?:GOTO|IF|WHILE|DO|END|T\\d{1,4})\\b"
       },
       {
         "token": "support.function",
@@ -350,19 +380,28 @@
       "fanuc_alarm",
       "variable",
       "control_flow",
-      "tool_handler",
+      "star_fanuc_tool_handler",
       "precheck",
       "fanuc_turn_spindle_limit",
+      "fanuc_turn_units",
       "modal",
+      "star_mcode_modal",
       "group_21_polar",
       "group_0_coordinate_set",
       "group_2_speed_mode",
+      "star_spindle_fluctuation",
       "group_5_feed_mode",
       "group_16_plane",
       "cornering",
       "wait_code",
       "spindle_speed",
       "cycle_end",
+      "star_automatic_coordinate",
+      "star_g266",
+      "fanuc_g92_threading",
+      "fanuc_g76_threading",
+      "fanuc_g36_circular_threading",
+      "fanuc_turn_drilling_cycles",
       "motion"
     ],
     "variable_pattern": "#(\\d+)",
@@ -387,6 +426,7 @@
       "Y"
     ],
     "g96_reference_axis": "X",
+    "circular_threading_enabled": true,
     "syntax_rules": [
       {
         "token": "comment.line.modifier",
@@ -402,7 +442,7 @@
       },
       {
         "token": "keyword.control",
-        "regex": "\\b(?:GOTO|IF|WHILE|DO|END)\\b"
+        "regex": "\\b(?:GOTO|IF|WHILE|DO|END|T\\d{1,4})\\b"
       },
       {
         "token": "support.function",
@@ -461,10 +501,12 @@
       "fanuc_alarm",
       "variable",
       "control_flow",
-      "tool_handler",
+      "fanuc_tool_handler",
       "precheck",
       "fanuc_turn_spindle_limit",
+      "fanuc_turn_units",
       "modal",
+      "fanuc_turn_mcode_modal",
       "group_16_plane",
       "group_21_polar",
       "group_0_coordinate_set",
@@ -472,6 +514,10 @@
       "group_5_feed_mode",
       "cornering",
       "cycle_end",
+      "fanuc_g92_threading",
+      "fanuc_g76_threading",
+      "fanuc_g36_circular_threading",
+      "fanuc_turn_drilling_cycles",
       "motion"
     ],
     "variable_pattern": "#(\\d+)",
@@ -495,6 +541,7 @@
       "X"
     ],
     "g96_reference_axis": "X",
+    "circular_threading_enabled": true,
     "syntax_rules": [
       {
         "token": "comment.line.modifier",
@@ -577,10 +624,11 @@
       "fanuc_alarm",
       "variable",
       "control_flow",
-      "tool_handler",
+      "fanuc_tool_handler",
       "fanuc_precheck",
       "fanuc_mill_groups",
       "modal",
+      "fanuc_mill_mcode_modal",
       "group_0_coordinate_set",
       "fanuc_mill_work_offset",
       "fanuc_mill_feed_mode",
@@ -701,13 +749,14 @@
       "siemens_iso_speed",
       "siemens_plane",
       "siemens_iso_polar",
-      "tool_handler",
+      "siemens_tool_handler",
       "siemens_iso_tool_length",
       "siemens_iso_cutter_comp",
       "siemens_iso_coordinate",
       "siemens_iso_inch_metric",
       "siemens_iso_misc",
       "modal",
+      "siemens_mill_mcode_modal",
       "cycle_end",
       "siemens_motion",
       "motion"

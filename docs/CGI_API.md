@@ -101,7 +101,9 @@ Each item in a canal's `segments` list includes motion semantics separately from
 - `sourceCode` is the effective modal interpolation code (`G00`, `G01`, `G02`, or `G03`) when known.
 - `type` remains the compatibility display value: `RAPID` for rapid traversal, otherwise the geometry value. It is `UNKNOWN` when the engine marks a generated path as having no single motion classification.
 - The semantic fields can be `null` for legacy engine output or compound generated paths that do not have one motion classification.
-- Compound cycle paths currently remain one points/duration entry, so clients should render `UNKNOWN` as an unclassified continuous path rather than infer rapid/feed from duration.
+- Implemented FANUC turning drilling cycles (`G83`, `G84`, `G85`, `G87`, and `G89`) are expanded into separate primitive segments. Every approach/retract segment has `geometry: "LINEAR"`, `traversal: "RAPID"`, and `sourceCode: "G00"`; every cutting/tapping/boring segment has `geometry: "LINEAR"`, `traversal: "FEED"`, and `sourceCode: "G01"`.
+- Implemented FANUC threading cycles are also expanded. `G92` and `G76` thread cuts use `geometry: "LINEAR"`, `traversal: "FEED"`, and their original `sourceCode`; their positioning/retract movements use `LINEAR/RAPID/G00`. Optional `G36` circular threading uses `ARC_CCW/FEED/G36`.
+- Other compound paths may still remain one points/duration entry. Clients should render `UNKNOWN` as an unclassified continuous path rather than infer rapid/feed from duration.
 - Duration is not used to classify segments when semantic metadata is present.
 
 On error, the script returns a JSON-like error message such as:

@@ -11,6 +11,32 @@ from ncplot7py.domain.handlers.fanuc_turn_cnc.gcode_group5_feed_mode import Feed
 
 
 class TestFanucModals(unittest.TestCase):
+    def test_g20_converts_new_input_without_converting_existing_position(self):
+        cstate = CNCState(axes={"X": 10.0, "Y": 0.0, "Z": 0.0})
+        cstate.machine_config = get_machine_config("FANUC_TURN")
+        canal = UniversalConfigDrivenCanal("C1", init_state=cstate)
+
+        canal.run_nc_code_list([
+            NCCommandNode(g_code_command={"G20", "G1"}, command_parameter={"Z": "1", "F": "2"}),
+        ])
+
+        self.assertEqual(cstate.get_modal("units"), "G20")
+        self.assertEqual(cstate.get_axis("X"), 10.0)
+        self.assertAlmostEqual(cstate.get_axis("Z"), 25.4)
+        self.assertAlmostEqual(cstate.feed_rate, 50.8)
+
+    def test_g21_restores_metric_input(self):
+        cstate = CNCState(); cstate.machine_config = get_machine_config("FANUC_TURN")
+        canal = UniversalConfigDrivenCanal("C1", init_state=cstate)
+
+        canal.run_nc_code_list([
+            NCCommandNode(g_code_command={"G20"}),
+            NCCommandNode(g_code_command={"G21", "G1"}, command_parameter={"Z": "2"}),
+        ])
+
+        self.assertEqual(cstate.get_modal("units"), "G21")
+        self.assertAlmostEqual(cstate.get_axis("Z"), 2.0)
+
     def test_fanuc_mill_g0_remains_active_for_axis_only_blocks(self):
         cstate = CNCState(); cstate.machine_config = get_machine_config("FANUC_MILL")
         canal = UniversalConfigDrivenCanal('C1', init_state=cstate)
@@ -122,6 +148,43 @@ class TestFanucModals(unittest.TestCase):
 
         _points, duration = canal.get_tool_path()[-1]
         self.assertAlmostEqual(duration, 30.0)
+
+    def test_m3_and_m4_return_c_axis_to_zero_for_fanuc_turn_profiles(self):
+        for machine_name in ("FANUC_TURN", "FANUC_STAR_x-D_y-R_z_R"):
+            for m_code in ("3", "4"):
+                with self.subTest(machine_name=machine_name, m_code=m_code):
+                    cstate = CNCState(axes={"X": 0.0, "Y": 0.0, "Z": 0.0, "C": 90.0})
+                    cstate.machine_config = get_machine_config(machine_name)
+                    canal = UniversalConfigDrivenCanal("C1", init_state=cstate)
+
+                    canal.run_nc_code_list([NCCommandNode(g_code_command=set(), command_parameter={"M": m_code})])
+
+                    self.assertEqual(cstate.get_modal("spindle_direction"), f"M{m_code}")
+                    self.assertEqual(cstate.get_axis("C"), 0.0)
+                    points, _duration = canal.get_tool_path()[-1]
+                    self.assertEqual(points[-1].c, 0.0)
+
+    def test_fanuc_mill_m3_sets_spindle_without_moving_c_axis(self):
+        cstate = CNCState(axes={"X": 0.0, "Y": 0.0, "Z": 0.0, "C": 90.0})
+        cstate.machine_config = get_machine_config("FANUC_MILL")
+        canal = UniversalConfigDrivenCanal("C1", init_state=cstate)
+
+        canal.run_nc_code_list([NCCommandNode(command_parameter={"M": "03"})])
+
+        self.assertEqual(cstate.get_modal("spindle_direction"), "M3")
+        self.assertEqual(cstate.get_axis("C"), 90.0)
+        self.assertEqual(canal.get_tool_path(), [])
+
+    def test_fanuc_mill_coolant_codes_are_modal(self):
+        cstate = CNCState(); cstate.machine_config = get_machine_config("FANUC_MILL")
+        canal = UniversalConfigDrivenCanal("C1", init_state=cstate)
+
+        canal.run_nc_code_list([
+            NCCommandNode(command_parameter={"M": "8"}),
+            NCCommandNode(command_parameter={"M": "9"}),
+        ])
+
+        self.assertEqual(cstate.get_modal("coolant_mode"), "M9")
 
 
 if __name__ == '__main__':

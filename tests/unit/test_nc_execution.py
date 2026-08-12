@@ -5,8 +5,10 @@ import unittest
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', 'src'))
 
 from ncplot7py.application.nc_execution import NCExecutionEngine
+from ncplot7py.domain.cnc_state import CNCState
+from ncplot7py.domain.machines import get_machine_config
 from ncplot7py.infrastructure.lexers import SiemensProgramLexer
-from ncplot7py.infrastructure.machines.base_stateful_control import BaseStatefulCanal
+from ncplot7py.infrastructure.machines.base_stateful_control import BaseStatefulCanal, UniversalConfigDrivenControl
 from ncplot7py.infrastructure.parsers.nc_command_parser import NCCommandStringParser
 
 
@@ -115,6 +117,41 @@ class FakeControlWrappedExecutionError:
 
 
 class TestNCExecutionEngine(unittest.TestCase):
+    def test_drilling_cycle_plot_contains_classified_primitive_segments(self):
+        state = CNCState(machine_config=get_machine_config("FANUC_TURN"))
+        control = UniversalConfigDrivenControl(init_nc_states=[state])
+        engine = NCExecutionEngine(control)
+
+        result = engine.get_Syncro_plot(
+            ["G98\nG83 Z-4 R-1 Q2000 F100"],
+            synch=False,
+        )
+
+        plot = result[0]["plot"]
+        self.assertGreater(len(plot), 1)
+        self.assertEqual({entry["geometry"] for entry in plot}, {"LINEAR"})
+        self.assertEqual({entry["traversal"] for entry in plot}, {"RAPID", "FEED"})
+        self.assertEqual({entry["sourceCode"] for entry in plot}, {"G00", "G01"})
+        self.assertEqual({entry["lineNumber"] for entry in plot}, {2})
+
+    def test_g92_plot_contains_classified_threading_primitives(self):
+        state = CNCState(machine_config=get_machine_config("FANUC_TURN"))
+        state.spindle_speed = 1000.0
+        control = UniversalConfigDrivenControl(init_nc_states=[state])
+        engine = NCExecutionEngine(control)
+
+        result = engine.get_Syncro_plot(
+            ["G92 X-2 Z-4 F1"],
+            synch=False,
+        )
+
+        plot = result[0]["plot"]
+        self.assertEqual(len(plot), 4)
+        self.assertEqual({entry["geometry"] for entry in plot}, {"LINEAR"})
+        self.assertEqual({entry["traversal"] for entry in plot}, {"RAPID", "FEED"})
+        self.assertEqual({entry["sourceCode"] for entry in plot}, {"G00", "G92"})
+        self.assertEqual({entry["lineNumber"] for entry in plot}, {1})
+
     def test_happy_path_returns_plot_structure(self):
         ctrl = FakeControlHappy()
         engine = NCExecutionEngine(ctrl)

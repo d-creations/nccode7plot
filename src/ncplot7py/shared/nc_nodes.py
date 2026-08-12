@@ -8,7 +8,7 @@ interop with linked-list implementations that expect those fields.
 from __future__ import annotations
 
 from copy import deepcopy
-from typing import Dict, Optional, Set
+from typing import Dict, List, Optional, Set
 
 from ..interfaces.BaseNCCommandNode import BaseNCCommandNode
 
@@ -41,6 +41,7 @@ class NCCommandNode(BaseNCCommandNode):
         self._motion_geometry: Optional[str] = None
         self._motion_traversal: Optional[str] = None
         self._motion_source_code: Optional[str] = None
+        self._generated_motion_segments: List[Dict[str, object]] = []
 
         # Optional pointers for linked-list style containers
         self._next_ncCode: Optional["NCCommandNode"] = None
@@ -83,10 +84,17 @@ class NCCommandNode(BaseNCCommandNode):
     def motion_source_code(self) -> Optional[str]:
         return self._motion_source_code
 
+    @property
+    def generated_motion_segments(self) -> List[Dict[str, object]]:
+        return self._generated_motion_segments
+
     def set_motion_metadata(self, geometry: str, traversal: str, source_code: str) -> None:
         self._motion_geometry = geometry
         self._motion_traversal = traversal
         self._motion_source_code = source_code
+
+    def set_generated_motion_segments(self, segments: List[Dict[str, object]]) -> None:
+        self._generated_motion_segments = list(segments)
 
     def __str__(self) -> str:
         parts = ["NC COMMAND: "]
@@ -120,6 +128,7 @@ class NCCommandNode(BaseNCCommandNode):
         node._motion_geometry = self._motion_geometry
         node._motion_traversal = self._motion_traversal
         node._motion_source_code = self._motion_source_code
+        node._generated_motion_segments = deepcopy(self._generated_motion_segments)
         return node
 
     def __del__(self) -> None:
