@@ -15,7 +15,6 @@ class TestStarG161StepCycle(unittest.TestCase):
         state = CNCState(machine_config=get_machine_config("FANUC_STAR_x-D_y-R_z_R"))
         state.extra["surface_speed_mode"] = SpeedMode.CONSTANT_REV
         state.extra["feed_mode"] = FeedMode.FEED_PER_REV
-        state.extra["star.machining_mode"] = "M41"
         state.spindle_speed = 1000.0
         return state
 
@@ -50,11 +49,10 @@ class TestStarG161StepCycle(unittest.TestCase):
         self.assertEqual(motion_node.motion_traversal, "FEED")
         self.assertEqual(motion_node.motion_source_code, "G161")
 
-    def test_configured_chain_accepts_g161_after_m41_g97_g99(self):
+    def test_configured_chain_accepts_g161_without_m41(self):
         state = CNCState(machine_config=get_machine_config("FANUC_STAR_x-D_y-R_z_R"))
         canal = UniversalConfigDrivenCanal("C1", init_state=state)
         canal.run_nc_code_list([
-            NCCommandNode(command_parameter={"M": "41"}),
             NCCommandNode(g_code_command={"G97", "G99"}, command_parameter={"S": "1000"}),
             NCCommandNode(
                 g_code_command={"G161"},
@@ -62,8 +60,39 @@ class TestStarG161StepCycle(unittest.TestCase):
             ),
         ])
 
-        self.assertEqual(state.extra["star.machining_mode"], "M41")
+        self.assertNotIn("star.machining_mode", state.extra)
         self.assertEqual(state.extra["star.g161"]["parameters"]["q"], 3.0)
+
+    def test_g161_accepts_only_a_and_d_without_q_or_m41(self):
+        state = self._state()
+        state.spindle_speed = 0.0
+        canal = UniversalConfigDrivenCanal("C1", init_state=state)
+        canal.run_nc_code_list([
+            NCCommandNode(
+                g_code_command={"G161"},
+                command_parameter={"A": "1.5", "D": "2"},
+            ),
+        ])
+
+        self.assertEqual(
+            state.extra["star.g161"]["parameters"],
+            {"a": 1.5, "f": None, "d": 2.0, "q": None},
+        )
+        self.assertFalse(state.extra["star.g161"]["geometry_available"])
+        self.assertEqual(canal.get_tool_path(), [])
+        self.assertEqual(canal.get_exec_nodes()[0].generated_motion_segments, [])
+
+    def test_g161_accepts_q_zero(self):
+        state = self._state()
+        StarG161StepCycleHandler().handle(
+            NCCommandNode(
+                g_code_command={"G161"},
+                command_parameter={"A": "1", "D": "1", "Q": "0"},
+            ),
+            state,
+        )
+
+        self.assertEqual(state.extra["star.g161"]["parameters"]["q"], 0.0)
 
     def test_g161_rejects_g96(self):
         state = self._state()
@@ -79,12 +108,19 @@ class TestStarG161StepCycle(unittest.TestCase):
             StarG161StepCycleHandler().handle(NCCommandNode(g_code_command={"G161"}, command_parameter={"Z": "-1", "A": "1", "F": "1", "D": "1", "Q": "1"}), state)
         self.assertEqual(error.exception.code, 3729)
 
-    def test_g161_requires_m41(self):
+    def test_g161_accepts_endpoint_in_m40_mode(self):
         state = self._state()
         state.extra["star.machining_mode"] = "M40"
-        with self.assertRaises(ExceptionNode) as error:
-            StarG161StepCycleHandler().handle(NCCommandNode(g_code_command={"G161"}, command_parameter={"Z": "-1", "A": "1", "F": "1", "D": "1", "Q": "1"}), state)
-        self.assertEqual(error.exception.code, 3728)
+        points, duration = StarG161StepCycleHandler().handle(
+            NCCommandNode(
+                g_code_command={"G161"},
+                command_parameter={"Z": "-1", "A": "1", "F": "1", "D": "1"},
+            ),
+            state,
+        )
+
+        self.assertEqual(points[-1].z, -1.0)
+        self.assertGreater(duration, 0.0)
 
     def test_g161_requires_option_in_machining_mode(self):
         config = MachineConfig(
@@ -99,7 +135,6 @@ class TestStarG161StepCycle(unittest.TestCase):
         state.extra.update({
             "surface_speed_mode": SpeedMode.CONSTANT_REV,
             "feed_mode": FeedMode.FEED_PER_REV,
-            "star.machining_mode": "M41",
         })
         state.spindle_speed = 1000.0
         with self.assertRaises(ExceptionNode) as error:

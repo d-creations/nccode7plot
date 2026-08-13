@@ -26,6 +26,24 @@ class TestStarTurnHandler(unittest.TestCase):
         self.assertIsNone(pts)
         self.assertIsNone(dur)
 
+    def test_g125_without_z_defaults_to_z_zero(self):
+        handler = StarAutomaticCoordinateHandler()
+
+        for parameters, expected in (
+            ({}, {"Z": 0.0}),
+            ({"W": "2.5"}, {"W": 2.5, "Z": 0.0}),
+            ({"Z": "0"}, {"Z": 0.0}),
+        ):
+            with self.subTest(parameters=parameters):
+                state = CNCState()
+                handler.handle(
+                    NCCommandNode(g_code_command={"G125"}, command_parameter=parameters),
+                    state,
+                )
+
+                self.assertTrue(state.extra["star.coordinate.z1_set"])
+                self.assertEqual(state.extra["star.coordinate.z1_command"], expected)
+
     def test_g125_rejects_unsupported_x_word(self):
         handler = StarAutomaticCoordinateHandler()
         state = CNCState()

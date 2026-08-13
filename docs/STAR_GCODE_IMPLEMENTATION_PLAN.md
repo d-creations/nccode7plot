@@ -78,7 +78,7 @@ description; use the command section and option availability for implementation.
 | `G112`, `G113` | Polar interpolation / cancel | Implemented / partial | `group_21_polar` covers transformation; add Star mode and conflict validation. |
 | `G117`, `G118`, `G119` | Manual-reference tokens; exact function to verify | Not implemented | Hold until the command section identifies exact semantics. |
 | `G125`, `G130`, `G131`, `G132`, `G133` | Star automatic coordinate setting | Partial | `StarAutomaticCoordinateHandler` validates formats and sequence state; proprietary coordinate formulas remain missing. |
-| `G161` | Star Step Cycle Pro | Partial | `StarG161StepCycleHandler` validates `X/Y/Z A F D Q`, executes the net endpoint as `LINEAR/FEED/G161`, and stores cycle parameters. Detailed amplitude oscillation remains unavailable. |
+| `G161` | Star Step Cycle Pro | Partial | `StarG161StepCycleHandler` accepts required `A/D`, optional endpoint/`F/Q`, and no prior `M41`. It stores cycle parameters and executes a supplied endpoint as `LINEAR/FEED/G161`; detailed amplitude oscillation remains unavailable. |
 | `G164`, `G165` | Star eccentric machining cycle | Recognized only | Add option-gated cycle behavior; validate `A`/`B`, `C`/`D`, speed, and allowed words. |
 | `G170`-`G174` | Star machine modes / path restrictions | Recognized only | Implement modal mode state first; commands must be isolated blocks. |
 | `G180`, `G181` | Star power-driven-tool operation | Recognized only | Add tool/spindle state, then implement `T`, `S`, and `L` requirements. |
@@ -173,7 +173,7 @@ The following work was completed on 2026-08-12 and is covered by focused tests:
 | Star | `star_automatic_coordinate` | `star_machine/automatic_coordinate_handler.py` | `G125/G130-G133` formats, prerequisites, and state sequence. |
 | Star | `star_g266` | `star_machine/g266_handler.py` | `G266` allowed/required words, numeric validation, and known variable mapping. |
 | Star | `star_b1_tilting` | `star_machine/b1_tilting_handler.py` | Guarded `G910/G920` B1 rapid indexing and explicit tilted-coordinate reference state. |
-| Star | `star_g161_step_cycle` | `star_machine/g161_step_cycle_handler.py` | Option-gated `G161`, `X/Y/Z` endpoint movement, `A/D` range checks, feed/spindle timing, and `LINEAR/FEED/G161` output. |
+| Star | `star_g161_step_cycle` | `star_machine/g161_step_cycle_handler.py` | Option-gated `G161`, parameter-only `A/D` activation, optional `Q >= 0`, optional endpoint movement, and `LINEAR/FEED/G161` output. |
 | Star compatibility | Not configured | `star_machine/star_turn_handler.py` | Facade only; delegates to the separate Star modules. |
 
 The machine configuration now explicitly selects control-specific tool and
@@ -254,7 +254,7 @@ confirms the state dependencies:
 ```mermaid
 stateDiagram-v2
    [*] --> Z1Unset
-   Z1Unset --> Z1Set: G125 Z/W
+   Z1Unset --> Z1Set: G125 [Z/W]
    Z1Set --> PickupSet: G131 B
    PickupSet --> ProjectionKnown: G133
    ProjectionKnown --> Path2Set: G132
@@ -264,8 +264,9 @@ stateDiagram-v2
 The exact calculation formulas require the Star programming documentation, but
 the safe implementation contract is already clear:
 
-- `G125` accepts only `Z` and/or `W`; record the Z1 reference and whether it
-   was defined. It is incompatible with `G41/G42`.
+- `G125` accepts only optional `Z` and `W`. Bare `G125` is equivalent to
+   `G125 Z0`; record the Z1 reference and whether it was defined. It is
+   incompatible with `G41/G42`.
 - `G130`, `G132`, and `G133` are isolated blocks; reject all extra words.
 - `G131` accepts only optional `B`, requires stopped Z1 and prior `G125`.
 - `G133` requires prior `G131`; it calculates/stores the projection needed by
@@ -279,28 +280,31 @@ compare calculated coordinate origins against machine examples.
 
 ### Step Cycle Pro: `G161`
 
-`G161` is a Star option-gated chip-breaking cycle. From the Star alarm table,
-the confirmed block contract is:
+`G161` is a Star option-gated chip-breaking cycle. The supported block
+contract is:
 
 ```text
-G161 X... Y... Z... A... F... D... Q...
+G161 [X... Y... Z...] A... [F...] D... [Q...]
 ```
 
-- At least one `X`, `Y`, or `Z` endpoint is required.
+- `A` and `D` may be programmed alone to configure the cycle without motion.
+- `X`, `Y`, and `Z` are optional endpoint words.
 - `A` is the amplitude setting and accepts `1` through `5`.
 - `D` is the spindle rotations per amplitude and accepts `1` through `5`.
-- `F` is the positive feedrate and `Q` is the positive motor-strength setting.
+- `F` is optional; endpoint motion uses it or the active positive modal feed.
+- `Q` is optional and accepts zero or a positive motor-strength setting.
 - It requires feed-per-revolution (`G99`), fixed RPM (`G97`, therefore not
-   `G96`), and `M41` mode.
+   `G96`). `M41` does not need to be programmed before `G161`.
 - It needs the Step Cycle Pro option when running in MACHINING mode.
 
 Implemented executor:
 
 1. Validate options and all modal prerequisites before mutating state.
-2. Validate endpoint and numeric parameter ranges.
+2. Validate optional endpoint words and numeric parameter ranges.
 3. Store typed Step Cycle parameters under `star.g161`.
-4. Execute the net start-to-end move using `F` in `G99` mode and emit
-   `LINEAR/FEED/G161` drawing metadata.
+4. For blocks with an endpoint, execute the net start-to-end move using the
+   explicit or modal feed and emit `LINEAR/FEED/G161` drawing metadata.
+   Parameter-only blocks emit no drawing path.
 5. Preserve `physical_cycle_path_available: false`: the net path is correct,
    but the undocumented forward/back amplitude oscillations are not expanded.
 

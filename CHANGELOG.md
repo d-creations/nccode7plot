@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- STAR `G161` now accepts parameter-only `A`/`D` blocks, omitted or zero `Q`, and execution without a preceding `M41`; endpoint movement can use the active modal feed.
+- STAR `G125` now accepts a block without `Z` and treats it as `G125 Z0`.
+
 ---
 
 ## [0.1.4] - 2026-08-12

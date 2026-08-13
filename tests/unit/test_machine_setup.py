@@ -1,4 +1,5 @@
 import unittest
+import re
 from unittest.mock import mock_open, patch
 
 from ncplot7py.domain.cnc_state import CNCState
@@ -198,6 +199,11 @@ class TestMachineSetup(unittest.TestCase):
         self.assertIn("MCALL", siemens_keyword_pattern)
         self.assertIn("variable.other.system.siemens", by_token)
         self.assertIn("variable.other.named.siemens", by_token)
+
+        for machine_name, machine_config in data.items():
+            for rule in machine_config.get("syntax_rules", []):
+                with self.subTest(machine=machine_name, token=rule["token"]):
+                    self.assertIsNone(re.compile(rule["regex"]).match(""))
 
     def test_machine_configs_expose_parser_name_by_control_family(self):
         self.assertEqual(get_machine_config("FANUC_MILL").parser_name, "fanuc")

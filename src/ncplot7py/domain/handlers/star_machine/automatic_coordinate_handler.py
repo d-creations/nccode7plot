@@ -47,8 +47,9 @@ class StarAutomaticCoordinateHandler(Handler):
         return super().handle(node, state)
 
     def _handle_g125(self, node: NCCommandNode, state: CNCState) -> None:
-        self._require_words(node, "G125", {"Z", "W"}, 3622, require_any=True)
+        self._require_words(node, "G125", {"Z", "W"}, 3622)
         values = self._numeric_words(node, {"Z", "W"})
+        values.setdefault("Z", 0.0)
         state.extra["star.coordinate.z1_command"] = values
         state.extra["star.coordinate.z1_set"] = True
         for word in values:

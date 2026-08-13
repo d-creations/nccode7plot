@@ -973,7 +973,7 @@
       },
       {
         "token": "keyword.control",
-        "regex": "T=\"[^\"]+\"|(?:CYCLE|POCKET|HOLES|SLOT)\\d+|LONGHOLE|WORKPIECE|MCALL|M30|"
+        "regex": "T=\"[^\"]+\"|(?:CYCLE|POCKET|HOLES|SLOT)\\d+|LONGHOLE|WORKPIECE|MCALL|M30"
       },
       {
         "token": "support.function",
